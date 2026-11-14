@@ -1,0 +1,1305 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: library list on the left, sticky now-playing panel on the right (wide);
+   on phones the list fills the screen, a mini bar sits at the bottom and opens a full-screen player. */
+:root{
+  --bg:#ffffff; --fg:#000000; --mute:#6b6b6b; --line:#e4e4e4; --soft:#f2f2f2; --line2:#d6d6d6;
+  --cb:var(--fg); --cf:var(--bg);
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#000000; --fg:#ffffff; --mute:#8d8d8d; --line:#1f1f1f; --soft:#111111; --line2:#2e2e2e; color-scheme:dark }
+}
+:root[data-theme="dark"]{ --bg:#000000; --fg:#ffffff; --mute:#8d8d8d; --line:#1f1f1f; --soft:#111111; --line2:#2e2e2e; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 15px/1.45 var(--body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,.range:focus-visible{outline:2px solid var(--fg);outline-offset:3px;border-radius:8px}
+svg{display:block}
+.cb{fill:var(--cb)} .cf{fill:var(--cf)}
+.sf{stroke:var(--cf);fill:none;stroke-linecap:round} .sb{stroke:var(--cb);fill:none;stroke-linecap:round}
+
+.app{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:0 140px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 6px}
+.brand{display:flex;align-items:center;gap:10px;font:800 22px/1 var(--display);font-stretch:125%;letter-spacing:-.03em}
+.logo{width:32px;height:32px}
+.chips{display:flex;gap:6px}
+.chip{height:34px;padding-inline:14px;border-radius:999px;border:1.5px solid var(--line2);font-weight:600;font-size:13px;color:var(--mute);display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.chip span{font:500 11px var(--mono)}
+
+.hero{padding-block:30px 6px}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+h1{margin:10px 0 0;font:800 clamp(44px,13vw,72px)/.92 var(--display);font-stretch:125%;letter-spacing:-.04em;text-wrap:balance}
+.meta-line{margin-top:12px;font:400 12px var(--mono);color:var(--mute);letter-spacing:.04em}
+.actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.btn{height:46px;padding-inline:22px 24px;border-radius:999px;display:inline-flex;align-items:center;gap:10px;font-weight:700;border:1.5px solid var(--fg)}
+.btn svg{width:20px;height:20px}
+.btn.solid{background:var(--fg);color:var(--bg)}
+.btn:active{transform:scale(.97)}
+
+.back{height:34px;padding-inline:8px 14px;border-radius:999px;border:1.5px solid var(--line2);display:inline-flex;align-items:center;gap:2px;font-weight:600;font-size:13px}
+.back svg{width:18px;height:18px}
+.back:hover{border-color:var(--fg)}
+.albums{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:28px 16px;margin-top:18px}
+.agroup{margin-top:38px}
+.agroup+.agroup{margin-top:44px}
+.album{display:block;text-align:left;min-width:0}
+.acover{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden}
+.acover svg,.acover img{display:block;width:100%;height:100%;object-fit:cover}
+.album b{display:block;margin-top:10px;font-weight:750;font-stretch:112%;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.album small{display:block;color:var(--mute);font-size:13px}
+.album:active .acover{transform:scale(.98)}
+.ahead{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-end;padding-block:8px 0}
+.ahead .acover{width:min(100%,232px);flex:none}
+.ainfo{flex:1 1 260px;min-width:0}
+h1.h1s{font-size:clamp(34px,10vw,56px);line-height:.95}
+.disc{padding:20px 0 10px;font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--line)}
+.tracks.flat{margin-top:28px;border-top:1.5px solid var(--fg)}
+.rel{margin-top:34px}
+.rel-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1.5px solid var(--fg)}
+.rel-h h2{margin:0;font:700 19px/1.1 var(--display);font-stretch:115%;letter-spacing:-.015em}
+.rel-h span{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.tracks{list-style:none;margin:0;padding:0}
+.row{display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.row-main{flex:1;min-width:0;display:grid;grid-template-columns:26px 48px minmax(0,1fr) auto;align-items:center;gap:12px;padding-block:10px;text-align:left}
+.idx{font:500 12px var(--mono);color:var(--mute);display:grid;place-items:center;height:16px}
+.eq{display:none;gap:2px;align-items:flex-end;height:14px}
+.eq i{width:3px;height:100%;background:var(--fg);transform-origin:bottom;transform:scaleY(.35)}
+.row.cur .n{display:none}
+.row.cur .eq{display:flex}
+body.is-playing .row.cur .eq i{animation:eq .9s ease-in-out infinite}
+body.is-playing .row.cur .eq i:nth-child(2){animation-delay:-.3s}
+body.is-playing .row.cur .eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.thumb{display:block;width:48px;height:48px;border-radius:6px;overflow:hidden;flex:none}
+.thumb svg,.cover svg,.thumb img,.cover img{display:block;width:100%;height:100%;object-fit:cover}
+.t{min-width:0}
+.t b,.t small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t b{font-weight:650}
+.t small{color:var(--mute);font-size:13px}
+.row.cur .t b{font-weight:800}
+.dur{font:400 12px var(--mono);color:var(--mute);font-variant-numeric:tabular-nums}
+.empty{margin-top:48px;padding:40px 16px;border:1.5px dashed var(--line2);border-radius:12px;text-align:center;color:var(--mute)}
+.empty svg{width:28px;height:28px;margin:0 auto 12px}
+
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;flex:none}
+.icon-btn svg{width:24px;height:24px}
+.icon-btn:hover{background:var(--soft)}
+.like svg{width:20px;height:20px;fill:none;stroke:currentColor}
+.like[aria-pressed="true"] svg{fill:var(--fg)}
+.like:not([aria-pressed="true"]){color:var(--mute)}
+.ic-pause{display:none}
+body.is-playing .ic-pause{display:block}
+body.is-playing .ic-play{display:none}
+
+/* now playing */
+.np{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 24px calc(env(safe-area-inset-bottom,0px) + 22px);
+  transform:translateY(100%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s .35s}
+.np.open{transform:none;visibility:visible;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.np-top{display:flex;align-items:center;justify-content:space-between}
+.np-top .icon-btn,.np-spacer{width:44px}
+.cover{flex:none;aspect-ratio:1;width:min(100%,44vh);margin:14px auto 22px;border-radius:10px;overflow:hidden}
+.meta{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.meta-t{min-width:0}
+.meta h2{margin:0;font:800 clamp(24px,7vw,30px)/1.05 var(--display);font-stretch:118%;letter-spacing:-.025em}
+.meta p{margin:6px 0 0;color:var(--mute)}
+.alb-link{display:block;margin-top:4px;font:500 11px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px}
+.alb-link:hover{color:var(--fg)}
+#viz{display:block;width:100%;height:48px;margin-top:18px}
+.scrub{margin-top:8px}
+.range{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:0;cursor:pointer;--p:0%}
+.range::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(to right,var(--fg) var(--p),var(--line2) var(--p))}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--fg);margin-top:-5.5px;border:0}
+.range::-moz-range-track{height:3px;border-radius:2px;background:linear-gradient(to right,var(--fg) var(--p),var(--line2) var(--p))}
+.range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--fg);border:0}
+.times{display:flex;justify-content:space-between;font:400 12px var(--mono);color:var(--mute);font-variant-numeric:tabular-nums}
+.ctrl{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.toggle{color:var(--mute);position:relative}
+.toggle[aria-pressed="true"]{color:var(--fg)}
+.toggle[aria-pressed="true"]::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--fg)}
+.rep1{display:none}
+.toggle.one .rep1{display:block}
+.play-big{width:68px;height:68px;border-radius:50%;background:var(--fg);color:var(--bg);display:grid;place-items:center}
+.play-big svg{width:30px;height:30px}
+.play-big:hover{background:var(--fg)}
+.play-big:active{transform:scale(.95)}
+.vol{display:none;align-items:center;gap:10px;margin-top:18px;color:var(--mute)}
+.vol svg{width:20px;height:20px;flex:none}
+
+/* mini bar */
+.mini{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:4px;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 8px) 16px}
+.mini-bar{position:absolute;left:0;top:-1px;height:2px;width:100%;pointer-events:none}
+.mini-bar i{display:block;height:2px;width:0;background:var(--fg)}
+.mini-open{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left}
+.mini .thumb{width:44px;height:44px}
+
+@media (min-width:900px){
+  .app{max-width:1200px;padding-inline:40px;display:grid;grid-template-columns:minmax(0,1fr) 400px;column-gap:64px;padding-block:0 64px}
+  .np{position:sticky;top:24px;align-self:start;inset:auto;transform:none;visibility:visible;z-index:1;overflow:visible;padding:0;margin-top:96px;transition:none}
+  .np-top .icon-btn.close,.np-spacer{display:none}
+  .np-top{justify-content:flex-start}
+  .cover{width:100%;margin-top:16px}
+  .vol{display:flex}
+  .mini{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .np,.np.open{transition:none}
+  body.is-playing .row.cur .eq i{animation:none}
+}
+</style>
+
+<div class="app">
+  <main class="lib">
+    <header class="top">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="Mono"><rect width="64" height="64" rx="15" class="cb"/><g class="cf"><ellipse cx="22.5" cy="46" rx="7.8" ry="5.6" transform="rotate(-20 22.5 46)"/><ellipse cx="42.3" cy="42" rx="7.8" ry="5.6" transform="rotate(-20 42.3 42)"/><rect x="28.4" y="18" width="3.9" height="28"/><rect x="48.2" y="13" width="3.9" height="29"/><polygon points="28.4,18 52.1,12.8 52.1,19.6 28.4,24.8"/></g></svg>
+        <span>mono</span>
+      </div>
+      <div class="chips" id="chips">
+        <button class="chip" data-filter="all" aria-pressed="true">All</button>
+        <button class="chip" data-filter="liked" aria-pressed="false">Liked <span id="likedN">0</span></button>
+      </div>
+      <button class="back" id="back" data-act="back" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Library</button>
+    </header>
+
+    <section class="hero" id="hero"></section>
+
+    <div id="rel"></div>
+  </main>
+
+  <aside class="np" id="np" aria-label="Now playing">
+    <div class="np-top">
+      <button class="icon-btn close" data-act="close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <span class="eyebrow">Now playing</span>
+      <span class="np-spacer"></span>
+    </div>
+    <div class="cover js-cover"></div>
+    <div class="meta">
+      <div class="meta-t"><h2 class="js-title"></h2><p class="js-sub"></p><button class="js-alb alb-link" data-act="gotoAlbum" aria-label="Go to album"></button></div>
+      <button class="icon-btn like js-like" data-act="like" aria-label="Like" aria-pressed="false"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+    </div>
+    <canvas id="viz" aria-hidden="true"></canvas>
+    <div class="scrub">
+      <input id="seek" class="range" type="range" min="0" max="100" step="0.1" value="0" aria-label="Seek">
+      <div class="times"><span id="tcur">0:00</span><span id="tdur">0:00</span></div>
+    </div>
+    <div class="ctrl">
+      <button class="icon-btn toggle" data-act="shuffle" aria-label="Shuffle" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5c2 0 3.2.8 4.4 2.5l2.2 3c1.2 1.7 2.4 2.5 4.4 2.5H21M3 17h3.5c2 0 3.2-.8 4.4-2.5M13.5 8.5C14.7 7.8 15.6 7 17.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg></button>
+      <button class="icon-btn" data-act="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6.5 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19 6.1v11.8a.5.5 0 0 1-.78.41l-8.6-5.9a.5.5 0 0 1 0-.82l8.6-5.9A.5.5 0 0 1 19 6.1z" fill="currentColor"/></svg></button>
+      <button class="play-big" data-act="play" aria-label="Play"><svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5.5v13a.5.5 0 0 0 .77.42l10-6.5a.5.5 0 0 0 0-.84l-10-6.5A.5.5 0 0 0 8 5.5z" fill="currentColor"/></svg><svg class="ic-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg></button>
+      <button class="icon-btn" data-act="next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M17.5 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M5 6.1v11.8a.5.5 0 0 0 .78.41l8.6-5.9a.5.5 0 0 0 0-.82l-8.6-5.9A.5.5 0 0 0 5 6.1z" fill="currentColor"/></svg></button>
+      <button class="icon-btn toggle" data-act="repeat" aria-label="Repeat off" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l3 3-3 3M4 11v-1a4 4 0 0 1 4-4h12M7 21l-3-3 3-3M20 13v1a4 4 0 0 1-4 4H4"/><text class="rep1" x="12" y="14.6" font-size="7.5" text-anchor="middle" font-weight="800" fill="currentColor" stroke="none">1</text></svg></button>
+    </div>
+    <div class="vol">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      <input id="vol" class="range" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Volume">
+    </div>
+  </aside>
+</div>
+
+<div class="mini" id="mini">
+  <div class="mini-bar"><i id="mprog"></i></div>
+  <button class="mini-open" data-act="open" aria-label="Open player">
+    <span class="thumb js-cover"></span>
+    <span class="t"><b class="js-title"></b><small class="js-sub"></small></span>
+  </button>
+  <button class="icon-btn" data-act="play" aria-label="Play"><svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5.5v13a.5.5 0 0 0 .77.42l10-6.5a.5.5 0 0 0 0-.84l-10-6.5A.5.5 0 0 0 8 5.5z" fill="currentColor"/></svg><svg class="ic-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg></button>
+  <button class="icon-btn" data-act="next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M17.5 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M5 6.1v11.8a.5.5 0 0 0 .78.41l8.6-5.9a.5.5 0 0 0 0-.82l-8.6-5.9A.5.5 0 0 0 5 6.1z" fill="currentColor"/></svg></button>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+
+/* ---------- music data (every track is synthesized live in the browser) ---------- */
+var ALB=[
+  {n:'ChromeQ.O',artist:'Qrazy',year:2015,type:'Album',art:'cover.jpg'},
+  {n:'C4RT00NZ',artist:'Qrazy',year:2018,type:'Album',art:'cover2.jpg'},
+  {n:'ghost',artist:'Qrazy & Quavo',by:'Qrazy',year:2020,type:'Album',art:'cover3.jpg'},
+  {n:'Nobody\'s Idol',artist:'Qrazy',year:2023,type:'Album',art:'cover4.jpg'},
+  {n:'ALTER EGO',artist:'E.G',year:2013,type:'Album',art:'cover5.jpg'},
+  {n:'I Am Who I Am',artist:'E.G',year:2016,type:'Album',art:'cover6.jpg'},
+  {n:'My Life As A Krazy Kid',artist:'E.G',year:2019,type:'Album',art:'cover7.jpg'},
+  {n:'Victory Title',artist:'Morray Hustle',year:2012,type:'Album',art:'cover8.jpg'},
+  {n:'Stańczyk',artist:'Reign The Ruin',year:2015,type:'Album',art:'cover9.jpg'},
+  {n:'THE WEIGHT OF A CROWN',artist:'Reign The Ruin',year:2016,type:'Album',art:'cover10.jpg'},
+  {n:'Riddles By Da Undertale',artist:'Jay Dreamliner & C.L Rock',year:2026,type:'Album',art:'cover11.jpg'},
+  {n:'BACKD00R.88',artist:'Cameron Miles',year:2013,type:'Album',art:'cover12.jpg'},
+  {n:'Thank America',artist:'Cameron Miles',year:2009,type:'Mixtape',art:'cover13.jpg'},
+  {n:'DEADZONE',artist:'Cameron Miles',year:2008,type:'Mixtape',art:'cover14.jpg'},
+  {n:'The Art Of Murder',artist:'Cameron Miles',year:2014,type:'Album',art:'cover15.jpg'},
+  {n:'A Nation Of Strangers',artist:'Cameron Miles',year:2016,type:'Album',art:'cover16.jpg'},
+  {n:'Westbound: Westside Highway Tapes 1',artist:'Westbound',by:'Cameron Miles',year:2013,type:'Album',art:'cover17.jpg'},
+  {n:'Westbound: High West Tapes 1',artist:'Westbound',by:'Cameron Miles',year:2015,type:'Album',art:'cover18.jpg'},
+  {n:'Alone At Friday Forest',artist:'Carter Electra',year:1989,type:'Album',art:'cover19.jpg'},
+  {n:'Alone At Friday Night - The Sequel',artist:'Carter Electra',year:1990,type:'Album',art:'cover20.jpg'},
+  {n:'Alone At Friday Forest pt. III',artist:'Carter Electra',year:1992,type:'Album',art:'cover21.jpg'},
+  {n:'Alone At Friday Forest pt. IV',artist:'Carter Electra',year:1993,type:'Album',art:'cover22.jpg'},
+  {n:'Alone At Friday Forest V',artist:'Carter Electra & Aftermath',by:'Carter Electra',year:1994,type:'Album',art:'cover23.jpg'},
+  {n:'Alone At Friday Forest part. VI',artist:'Carter Electra',year:1996,type:'Album',art:'cover24.jpg'},
+  {n:'Alone At Friday Forest part. VII [Electra Goes To Hell]',artist:'Carter Electra',year:1999,type:'Album',art:'cover25.jpg'},
+  {n:'Alone At Friday Forest pt. VIII [Hunting Of The Witch]',artist:'Carter Electra',year:2000,type:'Album',art:'cover26.jpg'},
+  {n:'COSTA LUAGA',artist:'Cam’ron West',year:2024,type:'Album',art:'cover27.jpg'},
+  {n:'The Spirit EP',artist:'Cam’ron West',year:2025,type:'EP',art:'cover28.jpg'},
+  {n:'Night Shift',artist:'Aster Vale',year:2026,type:'EP',cv:4}
+];
+var SC={minor:[0,2,3,5,7,8,10],major:[0,2,4,5,7,9,11],dorian:[0,2,3,5,7,9,10],lydian:[0,2,4,6,7,9,11],phrygian:[0,1,3,5,7,8,10]};
+var BASS={
+  sub808:[[0,7,0],[7,3,0],[10,6,0]],
+  long:[[0,14,0]],
+  half:[[0,7,0],[8,7,4]],
+  drive:[[0,2,0],[3,2,0],[6,2,0],[8,2,0],[11,2,0],[14,2,0]],
+  boom:[[0,4,0],[6,3,0],[10,4,0]],
+  eighths:[[0,1.6,0],[2,1.6,0],[4,1.6,0],[6,1.6,0],[8,1.6,0],[10,1.6,0],[12,1.6,0],[14,1.6,0]]
+};
+var DR={
+  keys:{k:[0,10],s:[],h:[4,12],kv:.5,sv:0,hv:.07},
+  arp:{k:[0,8],s:[4,12],h:[2,6,10,14],kv:.7,sv:.32,hv:.09},
+  pulse:{k:[0,4,8,12],s:[4,12],h:[2,6,10,14],kv:.82,sv:.36,hv:.1,clap:true},
+  beat:{k:[0,7,10],s:[4,12],h:[0,2,4,6,8,10,12,14],kv:.78,sv:.4,hv:.08},
+  trap:{k:[0,7,10],s:[8],h:[0,2,4,6,8,10,12,14],kv:.92,sv:.4,hv:.075,clap:true,roll:true}
+};
+var DEF=[
+ {t:'Find Me (Intro)',al:0,len:82,bpm:70,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:.42,arp:{grid:4,dens:.6,type:'sine',bell:true,oct:1,len:7,vel:.1},rev:.65,pad:.03,sev:true,swing:0,seed:101},
+ {t:'Outside',feat:'Future & Young Thug',al:0,len:234,bpm:140,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:.62,arp:{grid:2,dens:.7,type:'triangle',bell:false,oct:1,len:2,vel:.1},rev:.28,pad:.02,sev:false,swing:0,seed:113},
+ {t:'Attic Nights',feat:'Isolate',al:0,len:154,bpm:82,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:.45,arp:{grid:2,dens:.75,type:'sine',bell:true,oct:1,len:5,vel:.1},rev:.5,pad:.026,sev:true,swing:.1,seed:127},
+ {t:'Weak Bones',al:0,len:240,bpm:66,root:46,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:.6,arp:{grid:4,dens:.65,type:'sine',bell:true,oct:1,len:6,vel:.09},rev:.45,pad:.026,sev:true,swing:0,seed:131},
+ {t:'Helium Balloon',feat:'Erythium',al:0,len:200,bpm:100,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'arp',bass:'half',bv:.46,arp:{grid:2,dens:.95,type:'triangle',bell:false,oct:1,len:2.2,vel:.13},rev:.4,pad:.024,sev:false,swing:0,seed:149},
+ {t:'Go So Far',feat:'Quavo & Takeoff',al:0,len:209,bpm:144,root:53,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:.62,arp:{grid:2,dens:.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:.065},rev:.25,pad:.02,sev:false,swing:0,seed:157},
+ {t:'Snakes In The Industry',al:0,len:316,bpm:92,root:51,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:.55,arp:{grid:4,dens:.7,type:'triangle',bell:false,oct:1,len:3,vel:.12},rev:.3,pad:.022,sev:false,swing:.12,seed:163},
+ {t:'Can You Do',feat:'Drake & Lil Wayne',al:0,len:182,bpm:86,root:50,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:.58,arp:{grid:2,dens:.7,type:'sine',bell:true,oct:1,len:5,vel:.1},rev:.35,pad:.024,sev:true,swing:.1,seed:173},
+ {t:'Wonderworld',feat:'Frank Ocean',al:0,len:225,bpm:76,root:56,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:.45,arp:{grid:2,dens:.65,type:'sine',bell:true,oct:1,len:6,vel:.1},rev:.6,pad:.03,sev:true,swing:.1,seed:181},
+ {t:'Two One, One Two',al:0,len:90,bpm:112,root:57,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:.5,arp:{grid:2,dens:1,type:'triangle',bell:false,oct:1,len:1.8,vel:.13},rev:.25,pad:.02,sev:false,swing:0,seed:191},
+ {t:'Last Tram',al:28,cv:4,bpm:108,root:53,sc:'minor',pr:[0,5,2,6],pr2:[3,5,6,0],ds:'beat',bass:'boom',bv:.55,arp:{grid:4,dens:.7,type:'triangle',bell:false,oct:1,len:3,vel:.12},rev:.28,pad:.022,sev:false,swing:.12,seed:59},
+ {t:'Neon Off',al:28,cv:5,bpm:118,root:55,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'pulse',bass:'drive',bv:.5,arp:{grid:2,dens:.85,type:'sawtooth',bell:false,oct:1,len:1.6,vel:.07},rev:.25,pad:.02,sev:false,swing:0,seed:71},
+ {t:'Platform 9',al:28,cv:6,bpm:124,root:57,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'eighths',bv:.5,arp:{grid:2,dens:1,type:'triangle',bell:false,oct:1,len:1.8,vel:.13},rev:.22,pad:.02,sev:false,swing:0,seed:83},
+ {t:'Closing Time',al:28,cv:7,bpm:78,root:58,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:.45,arp:{grid:2,dens:.7,type:'sine',bell:true,oct:1,len:5,vel:.1},rev:.42,pad:.026,sev:true,swing:.1,seed:97},
+ {t:'Three Plaque',al:1,len:202,bpm:128,root:55,sc:'minor',pr:[0,5,2,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:211},
+ {t:'Oh My Gosh',al:1,len:178,bpm:138,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.26,pad:0.02,sev:false,swing:0,seed:223},
+ {t:'Music',al:1,len:133,bpm:96,root:57,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'arp',bass:'half',bv:0.46,arp:{grid:2,dens:0.95,type:'triangle',bell:false,oct:1,len:2.2,vel:0.13},rev:0.35,pad:0.024,sev:false,swing:0,seed:227},
+ {t:'Why She Can’t Stop',al:1,len:180,bpm:104,root:52,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.4,pad:0.024,sev:true,swing:0.12,seed:229},
+ {t:'No Way Out',al:1,len:194,bpm:132,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:4,dens:0.65,type:'sine',bell:true,oct:1,len:5,vel:0.09},rev:0.4,pad:0.022,sev:true,swing:0,seed:233},
+ {t:'Mixed Adventures pt. 1',al:1,len:179,bpm:112,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:239},
+ {t:'Mixed Adventures pt. 2',al:1,len:175,bpm:112,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'eighths',bv:0.5,arp:{grid:2,dens:1,type:'triangle',bell:false,oct:1,len:1.8,vel:0.13},rev:0.26,pad:0.022,sev:false,swing:0,seed:241},
+ {t:'Xylophone',al:1,len:177,bpm:108,root:60,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'arp',bass:'half',bv:0.45,arp:{grid:2,dens:1,type:'sine',bell:true,oct:1,len:3,vel:0.14},rev:0.3,pad:0.024,sev:false,swing:0,seed:251},
+ {t:'It’s Me (Live It!)',al:1,len:220,bpm:118,root:53,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.85,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:257},
+ {t:'Rights To Be Reserved',al:1,len:298,bpm:90,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.4,pad:0.026,sev:true,swing:0.1,seed:263},
+ {t:'11 - Interlude',al:1,len:54,bpm:72,root:58,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:269},
+ {t:'In Every Way Of Light',al:1,len:275,bpm:84,root:56,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.6,pad:0.03,sev:true,swing:0.1,seed:271},
+ {t:'We Break Through',feat:'Drake',al:1,len:202,bpm:140,root:50,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:277},
+ {t:'How Qrazy?',feat:'Ab-Soul & Bo',al:1,len:230,bpm:136,root:57,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:281},
+ {t:'fading away',al:2,len:150,bpm:70,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:301},
+ {t:'that’s family',al:2,len:178,bpm:84,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.75,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:307},
+ {t:'years pass by (eye 2 eye)',al:2,len:220,bpm:78,root:53,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.4,pad:0.026,sev:true,swing:0.1,seed:311},
+ {t:'no tomorrow',al:2,len:242,bpm:138,root:46,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:4,dens:0.65,type:'sine',bell:true,oct:1,len:5,vel:0.09},rev:0.4,pad:0.024,sev:true,swing:0,seed:313},
+ {t:'in this time',al:2,len:160,bpm:90,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.45,pad:0.026,sev:false,swing:0.08,seed:317},
+ {t:'struggle 2 success',al:2,len:159,bpm:140,root:48,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.26,pad:0.02,sev:false,swing:0,seed:331},
+ {t:'rockstar superstar',feat:'Travis Scott',al:2,len:180,bpm:144,root:55,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.25,pad:0.02,sev:false,swing:0,seed:337},
+ {t:'who is we?',al:2,len:130,bpm:100,root:57,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'arp',bass:'half',bv:0.46,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:2.2,vel:0.13},rev:0.3,pad:0.022,sev:false,swing:0,seed:347},
+ {t:'so much time left',feat:'Takeoff',al:2,len:182,bpm:132,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:349},
+ {t:'oxygen',al:2,len:72,bpm:80,root:56,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.4,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:353},
+ {t:'on my way',feat:'ScHoolboy Q',al:2,len:224,bpm:136,root:52,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:359},
+ {t:'when the clock hits midnight',al:2,len:318,bpm:76,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.65,type:'sine',bell:true,oct:1,len:6,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:367},
+ {t:'outro',al:2,len:10,bpm:96,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:373},
+ {t:'Western Horseback',al:3,len:203,bpm:96,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:401},
+ {t:'Swangin\' On Helheimer',al:3,len:296,bpm:134,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.022,sev:false,swing:0,seed:409},
+ {t:'Nobody\'s Perfect',al:3,len:245,bpm:80,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:419},
+ {t:'Da Art Of Storytelling - Remix',al:3,len:393,bpm:88,root:55,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.65,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.4,pad:0.026,sev:true,swing:0.1,seed:421},
+ {t:'Fireflies',al:3,len:153,bpm:72,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'long',bv:0.42,arp:{grid:4,dens:0.7,type:'sine',bell:true,oct:1,len:6,vel:0.1},rev:0.6,pad:0.03,sev:true,swing:0,seed:431},
+ {t:'On God',al:3,len:179,bpm:140,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.25,pad:0.02,sev:false,swing:0,seed:433},
+ {t:'Ice Cold Winds Meet',al:3,len:255,bpm:68,root:46,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.6,arp:{grid:4,dens:0.65,type:'sine',bell:true,oct:1,len:6,vel:0.09},rev:0.55,pad:0.028,sev:true,swing:0,seed:439},
+ {t:'WORLD',al:4,len:119,bpm:72,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:501},
+ {t:'OH MY GOD',al:4,len:155,bpm:98,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'arp',bass:'half',bv:0.46,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:2.2,vel:0.13},rev:0.3,pad:0.024,sev:false,swing:0,seed:503},
+ {t:'SKY HIGH',al:4,len:154,bpm:108,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0,seed:509},
+ {t:'AIN\'T NO WAY',feat:'Kitts, 6LACK & JID',al:4,len:290,bpm:138,root:48,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:521},
+ {t:'SNIPER SHOT',feat:'Killa Black',al:4,len:207,bpm:142,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.25,pad:0.02,sev:false,swing:0,seed:523},
+ {t:'BLACK CARD',al:4,len:73,bpm:90,root:53,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:541},
+ {t:'SO MUCH 2 BE THANKFUL 4',al:4,len:229,bpm:84,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:547},
+ {t:'THEY THANK ME',al:4,len:202,bpm:92,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:557},
+ {t:'SOULFOOD',al:4,len:164,bpm:80,root:56,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.75,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.12,seed:563},
+ {t:'LAUGHIN\' IN SIXTH GRADE',feat:'FooL\'s, Drake & YEAZ',al:4,len:314,bpm:130,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:569},
+ {t:'MORE THAN A PROMISE',al:4,len:179,bpm:76,root:58,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.65,type:'sine',bell:true,oct:1,len:6,vel:0.1},rev:0.6,pad:0.028,sev:true,swing:0.1,seed:571},
+ {t:'SELF ESTEEM',feat:'Common',al:4,len:180,bpm:88,root:54,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:577},
+ {t:'UNITY',al:4,len:130,bpm:112,root:57,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:587},
+ {t:'PERFECT WORLD / TRIANGLE TENSE',al:4,len:428,bpm:78,root:47,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'beat',bass:'sub808',b808:true,bv:0.55,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.55,pad:0.028,sev:true,swing:0.08,seed:593},
+ {t:'OUTRO (THANK THE WORLD)',al:4,len:14,bpm:96,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:599},
+ {t:'King E.G',al:5,len:100,bpm:74,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:601},
+ {t:'For My Day Ones',al:5,len:164,bpm:82,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:607},
+ {t:'We Used To',al:5,len:150,bpm:90,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:613},
+ {t:'Smoke Out',al:5,len:139,bpm:140,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:617},
+ {t:'So Low',feat:'Mustard & Drake',al:5,len:190,bpm:134,root:48,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:619},
+ {t:'Vibrant Colors',al:5,len:130,bpm:116,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:631},
+ {t:'Wit A Black Hood On',al:5,len:224,bpm:86,root:47,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:641},
+ {t:'Influencer S.N.I.T.C.H',feat:'Pusha T',al:5,len:270,bpm:142,root:50,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:643},
+ {t:'Checkers On The Board',al:5,len:224,bpm:94,root:53,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:647},
+ {t:'Childhood Nostalgia',feat:'Kendrick Lamar',al:5,len:283,bpm:78,root:56,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:653},
+ {t:'Not What U Think',al:5,len:130,bpm:100,root:51,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:659},
+ {t:'X-Mas In Dark Times',feat:'John Bows, A$AP Rocky, RAZ & Malice',al:5,len:410,bpm:70,root:58,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:661},
+ {t:'Swagger On',al:5,len:200,bpm:138,root:49,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:673},
+ {t:'Flip (A Cool Trick)',al:5,len:93,bpm:122,root:55,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:677},
+ {t:'Life Is Not Over Until You Win',al:5,len:170,bpm:84,root:54,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:683},
+ {t:'Shark Biterz',feat:'Method Man & Raekwon',al:5,len:273,bpm:92,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:691},
+ {t:'Who I Am',al:5,len:130,bpm:96,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:701},
+ {t:'Bittersweet Taste',al:5,len:159,bpm:76,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:709},
+ {t:'Neck Full',feat:'JAY-Z & Swagga Watcha',al:5,len:194,bpm:136,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:719},
+ {t:'I Am, Who I Am (Outro)',al:5,len:49,bpm:72,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:727},
+ {t:'Devious Acts',al:6,len:153,bpm:92,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:801},
+ {t:'For Whom The Bell Tolls',al:6,len:185,bpm:80,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:809},
+ {t:'Live Immortal',al:6,len:225,bpm:84,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:811},
+ {t:'To A Darker Place',al:6,len:192,bpm:136,root:47,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:821},
+ {t:'Nowhere To Stay',al:6,len:234,bpm:72,root:52,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:823},
+ {t:'Dangerous Minds',al:6,len:179,bpm:142,root:50,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:827},
+ {t:'He\'s Coming With Me, pt. 1',al:6,len:245,bpm:88,root:49,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:829},
+ {t:'Cold Afternoon',al:6,len:170,bpm:68,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:839},
+ {t:'He\'s Coming With Me, pt. 2',al:6,len:235,bpm:88,root:49,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:853},
+ {t:'My Life As A Krazy Kid',al:6,len:410,bpm:76,root:53,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:857},
+ {t:'Victory Title',feat:'Bertha Stewart',al:7,len:202,bpm:84,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:901},
+ {t:'Rap Shiznit',al:7,len:234,bpm:96,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:907},
+ {t:'Last Time Countin\' Checc\'s',feat:'YG',al:7,len:243,bpm:138,root:46,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:911},
+ {t:'Young Legend',feat:'Ice Cube',al:7,len:275,bpm:82,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:919},
+ {t:'Dedicated To All My Hustlers',feat:'Kendrick Lamar',al:7,len:272,bpm:78,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:929},
+ {t:'Blue Shoes',al:7,len:220,bpm:112,root:53,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:937},
+ {t:'Hussle Fo\' Time',al:7,len:190,bpm:92,root:51,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:941},
+ {t:'Status Symbol Prize',feat:'Novel',al:7,len:290,bpm:134,root:49,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:947},
+ {t:'Sucka Price',feat:'Q-Tip',al:7,len:235,bpm:94,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:953},
+ {t:'Keyz 2 My City',feat:'TeeLi',al:7,len:229,bpm:74,root:57,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:967},
+ {t:'Grinding Like My Life (Depended On It)',al:7,len:180,bpm:142,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:971},
+ {t:'Millions Stacking Up',al:7,len:194,bpm:120,root:55,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:977},
+ {t:'Loaded In Da Paint',feat:'J. Cole, B-Rez & DOX',al:7,len:314,bpm:136,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:983},
+ {t:'Real People',feat:'Martyn Stew',al:7,len:252,bpm:80,root:54,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:991},
+ {t:'Double Shits',feat:'Snoop Dogg & Dr. Dre',al:7,len:275,bpm:140,root:50,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:997},
+ {t:'Right Hand God, Left Hand Money (Outro)',al:7,len:224,bpm:70,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1009},
+ {t:'Intro',al:8,len:40,bpm:72,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1101},
+ {t:'America’s History',feat:'Bandit The Butcher',al:8,len:270,bpm:86,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1103},
+ {t:'Revolution Rights',al:8,len:202,bpm:96,root:51,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1109},
+ {t:'Under The Lights',al:8,len:208,bpm:80,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1117},
+ {t:'Underground',feat:'Ransom Relic',al:8,len:240,bpm:138,root:46,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1123},
+ {t:'Know Me',al:8,len:169,bpm:92,root:52,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1129},
+ {t:'Right Hand Manipulation',al:8,len:204,bpm:88,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1151},
+ {t:'Party With',feat:'Prodigy & A.K.A',al:8,len:320,bpm:118,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1153},
+ {t:'Relic',al:8,len:130,bpm:68,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1163},
+ {t:'Be-Headed Monster',feat:'Diz',al:8,len:190,bpm:140,root:49,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:1171},
+ {t:'Dark Civilian',feat:'Vazquez',al:8,len:179,bpm:82,root:46,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1181},
+ {t:'Jester',al:8,len:119,bpm:124,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1187},
+ {t:'Stańczyk - Painting In The Louvre',al:8,len:150,bpm:70,root:53,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1193},
+ {t:'How Heavy The Crown Is',al:9,len:153,bpm:68,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1201},
+ {t:'Blood On The Velvet',al:9,len:204,bpm:82,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1213},
+ {t:'Throne Made Of Bonez',al:9,len:230,bpm:140,root:47,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:1217},
+ {t:'Paranoia Palace',feat:'Grime & Jay-Z',al:9,len:240,bpm:134,root:49,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1223},
+ {t:'Family Issues',feat:'Bandit The Butcher',al:9,len:191,bpm:76,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1229},
+ {t:'No Heirs 2 The Pain',al:9,len:209,bpm:92,root:50,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1231},
+ {t:'Red On My Hands',al:9,len:179,bpm:86,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1237},
+ {t:'Man In The Mirror',feat:'Ransom Relic',al:9,len:220,bpm:72,root:55,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1249},
+ {t:'Cold Kingdom',al:9,len:204,bpm:66,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1259},
+ {t:'Murder Was The Case',feat:'Agzx',al:9,len:275,bpm:138,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1277},
+ {t:'Pray For My Sins',al:9,len:202,bpm:78,root:53,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1279},
+ {t:'Silence After The Screams',al:9,len:226,bpm:70,root:47,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1283},
+ {t:'Can’t Take It',feat:'Dolly DeVito',al:9,len:252,bpm:116,root:54,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1289},
+ {t:'Crown Don’t Forgive',al:9,len:205,bpm:94,root:51,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1291},
+ {t:'Long Live The Guilt (Outro)',al:9,len:59,bpm:64,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1297},
+ {t:'Cops Shot The Kid',feat:'Kanye West',w:true,disc:1,al:10,len:204,bpm:80,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1301},
+ {t:'We Ain’t With ‘Em',al:10,len:155,bpm:138,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1303},
+ {t:'Anymore',al:10,len:141,bpm:74,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1307},
+ {t:'So Much 2 Learn',al:10,len:236,bpm:92,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1319},
+ {t:'Vivã La Mexíco',al:10,len:277,bpm:118,root:53,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1321},
+ {t:'Somewhere Safe',feat:'Uncle Don',w:true,al:10,len:120,bpm:66,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1327},
+ {t:'American Dollar$',al:10,len:118,bpm:142,root:47,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:1361},
+ {t:'Can’t Stay With Us',al:10,len:177,bpm:96,root:51,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1367},
+ {t:'Interlude',al:10,len:34,bpm:70,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1373},
+ {t:'Brain Monogamy',al:10,len:225,bpm:78,root:56,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1381},
+ {t:'Oh Shit',al:10,len:192,bpm:136,root:46,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1399},
+ {t:'Twelve A.M',al:10,len:252,bpm:70,root:48,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1409},
+ {t:'Paramount Outro',al:10,len:14,bpm:64,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1423},
+ {t:'She’s My Neighbour pt. 1',disc:2,al:10,len:230,bpm:84,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1427},
+ {t:'Real Friends',feat:'Kamma',w:true,al:10,len:204,bpm:90,root:50,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1429},
+ {t:'Speed Of Light',al:10,len:182,bpm:126,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1433},
+ {t:'She’s My Neighbour pt. 2',al:10,len:220,bpm:84,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1439},
+ {t:'In Da Set',al:10,len:290,bpm:134,root:47,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1447},
+ {t:'Many Men (Miracle Death)',al:10,len:261,bpm:76,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1451},
+ {t:'ThankYouForTheBlessings - Skit',al:10,len:8,bpm:72,root:53,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1453},
+ {t:'Back Outside Boyz',al:10,len:220,bpm:98,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1459},
+ {t:'Interlude - 1 a.m.',al:10,len:20,bpm:66,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1471},
+ {t:'Yo, Hello',feat:'Don Toliver',w:true,al:10,len:179,bpm:130,root:49,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1481},
+ {t:'Realise A True Power',al:10,len:150,bpm:72,root:54,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1483},
+ {t:'Who Is That? (Foolish Remix)',al:10,len:204,bpm:114,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1487},
+ {t:'They Know Everything About You (TKEAY)',al:10,len:311,bpm:82,root:47,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1489},
+ {t:'BACKDOOR',feat:'Kenth Morgan',al:11,len:200,bpm:94,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1501},
+ {t:'Feeling Is Power',al:11,len:179,bpm:80,root:53,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1511},
+ {t:'M.W.G (Money Weed Girlz)',feat:'A$AP Rocky',al:11,len:245,bpm:136,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1523},
+ {t:'Cognac & Liquor',al:11,len:224,bpm:82,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1531},
+ {t:'Company B’z',feat:'Lil Wayne & MIX',al:11,len:275,bpm:116,root:52,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1543},
+ {t:'Too Much',al:11,len:150,bpm:140,root:47,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:1549},
+ {t:'Chapter 2: Interlude',al:11,len:35,bpm:68,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1553},
+ {t:'Kush & Coriander',feat:'Freddie Gibbs',al:11,len:191,bpm:90,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1559},
+ {t:'County 88',al:11,len:160,bpm:98,root:51,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1567},
+ {t:'He’s Gone Out (Know Time)',al:11,len:204,bpm:74,root:56,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1571},
+ {t:'He’s In Again (Learn Time)',feat:'Aaliyah',al:11,len:243,bpm:74,root:56,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1579},
+ {t:'A Fisherman’s Hook',feat:'Jay-Z',al:11,len:262,bpm:86,root:49,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1583},
+ {t:'Egoistical',al:11,len:139,bpm:122,root:54,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1597},
+ {t:'Chapter 3: Interlude',al:11,len:23,bpm:66,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1601},
+ {t:'Chicago Kid',feat:'Dr. Dre',al:11,len:235,bpm:134,root:48,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1607},
+ {t:'Outro',al:11,len:10,bpm:64,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1613},
+ {t:'A Capella',feat:'Rihanna',al:12,len:204,bpm:76,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1701},
+ {t:'Torn Off',al:12,len:150,bpm:94,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1703},
+ {t:'Over Me',al:12,len:224,bpm:72,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1709},
+ {t:'Miss Us',feat:'Lil Wayne',al:12,len:182,bpm:134,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1721},
+ {t:'Ms. America',al:12,len:224,bpm:112,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1723},
+ {t:'Mr. America',feat:'JAY-Z',al:12,len:242,bpm:84,root:47,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1733},
+ {t:'Away',al:12,len:209,bpm:70,root:54,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1741},
+ {t:'So Much To Do',al:12,len:179,bpm:98,root:51,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1747},
+ {t:'All Out',feat:'NeZee, D.O Brotha & KnockOut',al:12,len:306,bpm:138,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:1753},
+ {t:'Explain Yo Self',al:12,len:130,bpm:92,root:50,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:1759},
+ {t:'Interlude',al:12,len:40,bpm:66,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1777},
+ {t:'The Amazement',al:12,len:190,bpm:80,root:56,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1783},
+ {t:'Shut Me Off',feat:'THE-DREAM',al:12,len:189,bpm:78,root:48,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:1787},
+ {t:'Rise & Shine',feat:'Jay Rock',al:12,len:202,bpm:118,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:1789},
+ {t:'Pulitzer Prize',al:12,len:98,bpm:68,root:50,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:1801},
+ {t:'July 4th',al:12,len:160,bpm:74,root:53,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:1811},
+ {t:'Elegant',feat:'T.I & Swizz Beats',al:12,len:243,bpm:136,root:49,sc:'minor',pr:[0,6,5,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:1823},
+ {t:'INTRO',al:13,len:12,bpm:96,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,v2:{st:'amb',lead:'bell',vinyl:0,lv:0.1},seed:1901},
+ {t:'SLOWLY',al:13,len:164,bpm:68,root:52,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,v2:{st:'keys',lead:'rhodes',vinyl:1,lv:0.12},seed:1907},
+ {t:'UNDERWATER BITERZ',al:13,len:230,bpm:82,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,v2:{st:'trap',lead:'bell',vinyl:0,lv:0.1},seed:1913},
+ {t:'C.R.E.A.M (Remix)',al:13,len:225,bpm:92,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,v2:{st:'boom',lead:'rhodes',vinyl:1,lv:0.12},seed:1931},
+ {t:'NOVEMBER',al:13,len:153,bpm:72,root:55,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,v2:{st:'keys',lead:'flute',vinyl:1,lv:0.1},seed:1933},
+ {t:'CHRISTMAS AT DA MALL',al:13,len:179,bpm:84,root:57,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,v2:{st:'keys',lead:'bell',vinyl:0,lv:0.1},seed:1949},
+ {t:'PAY UP',al:13,len:181,bpm:140,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,v2:{st:'trap',lead:'saw',vinyl:0,lv:0.1},seed:1951},
+ {t:'BITZHES IN DA CLUB',al:13,len:170,bpm:122,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,v2:{st:'club',lead:'saw',vinyl:0,lv:0.1},seed:1973},
+ {t:'LOOK NOW',al:13,len:153,bpm:136,root:49,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,v2:{st:'trap',lead:'bell',vinyl:0,lv:0.1},seed:1979},
+ {t:'BURNING YA BRIDGES',feat:'E4',al:13,len:220,bpm:86,root:47,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,v2:{st:'trap',lead:'flute',vinyl:0,lv:0.1},seed:1987},
+ {t:'WHERE YOU AT?',al:13,len:130,bpm:96,root:51,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,v2:{st:'boom',lead:'bell',vinyl:1,lv:0.1},seed:1993},
+ {t:'OUTRO - THE LIFETIME',al:13,len:59,bpm:66,root:50,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,v2:{st:'amb',lead:'bell',vinyl:0,lv:0.1},seed:1997},
+ {t:'A Trip To Las Vegas',al:14,len:202,bpm:84,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2001},
+ {t:'Bitch Don’t Kill The Party',al:14,len:290,bpm:138,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2003},
+ {t:'Sing About The Feeling I’m Drowning In My Sorrow',al:14,len:896,bpm:72,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2011},
+ {t:'Rich Souls & Spirits',al:14,len:202,bpm:76,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2017},
+ {t:'Da Art Of True Pressure',al:14,len:265,bpm:94,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2027},
+ {t:'True Prophets',feat:'Kendrick Lamar',al:14,len:242,bpm:90,root:51,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2029},
+ {t:'the art',al:14,len:169,bpm:68,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2039},
+ {t:'of murder',feat:'MC Eith',al:14,len:245,bpm:134,root:47,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2053},
+ {t:'Photography Freestyle',al:14,len:202,bpm:116,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2063},
+ {t:'Swimming In Liquor / Extended',al:14,len:330,bpm:80,root:48,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2069},
+ {t:'Money Comes & Goes',feat:'Anna Wise',al:14,len:284,bpm:74,root:57,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2081},
+ {t:'C.O.M.P.T.O.N',feat:'Dr. Dre',al:14,len:262,bpm:96,root:49,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2083},
+ {t:'The American Flag',feat:'Thunder Cat, Miles Davis & Bryan Bulletin',al:15,len:285,bpm:78,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2101},
+ {t:'How Much Cents In A Dollar',feat:'Thundercat, Rock “Adam’s” & K-Ali',al:15,len:303,bpm:92,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2103},
+ {t:'These Days',feat:'Anna Wise, Snoop Dogg, Dr. Dre & Mary J. Blige',al:15,len:262,bpm:82,root:48,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2111},
+ {t:'Complexicon',feat:'Anna Wise, Kendrick Lamar & DJ Premier',al:15,len:269,bpm:96,root:51,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2113},
+ {t:'me',al:15,len:220,bpm:68,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2129},
+ {t:'you',al:15,len:191,bpm:72,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2131},
+ {t:'Takes A Nation Of Millions',feat:'Rhap',al:15,len:240,bpm:136,root:47,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2137},
+ {t:'Hood Politicians',al:15,len:178,bpm:98,root:49,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2141},
+ {t:'Assume Nothin’',al:15,len:208,bpm:74,root:56,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2143},
+ {t:'Aight (Extended & Cut)',feat:'Pharrell Williams & Jazz By Soul',al:15,len:302,bpm:112,root:53,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2153},
+ {t:'In Due Time',feat:'Bearings & D3V',al:15,len:200,bpm:80,root:54,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2161},
+ {t:'A Zulu Love',al:15,len:224,bpm:120,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2179},
+ {t:'Blacker The BlackBerry',al:15,len:242,bpm:86,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2203},
+ {t:'Pimp That Caterpillar (Mama Told Me)',al:15,len:239,bpm:138,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:2207},
+ {t:'Immortal',feat:'2Pac',al:15,len:617,bpm:74,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2213},
+ {t:'Kid Named K’z',al:16,len:202,bpm:94,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2301},
+ {t:'Act Like A Celebrity',al:16,len:243,bpm:118,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2303},
+ {t:'In Da Morning',al:16,len:232,bpm:76,root:56,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2309},
+ {t:'Possessed (Swear I’m)',al:16,len:179,bpm:140,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:2311},
+ {t:'Stranger 2 Me',al:16,len:240,bpm:82,root:48,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2333},
+ {t:'Perfect Peer Pressure',al:16,len:153,bpm:98,root:51,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2339},
+ {t:'Party (Down Da Block)',al:16,len:290,bpm:124,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2341},
+ {t:'R.I.P Your Soul',al:16,len:224,bpm:78,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2347},
+ {t:'Deranged Devil’s',al:16,len:204,bpm:72,root:52,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2351},
+ {t:'Not Together & Never Be',al:16,len:130,bpm:68,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2357},
+ {t:'Ruin The World Together (R.T.W.T)',al:16,len:290,bpm:136,root:49,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2371},
+ {t:'Digging A Grave 4 U',al:16,len:201,bpm:90,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2377},
+ {t:'Outro - But Is It A Dream?',al:16,len:72,bpm:66,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2381},
+ {t:'Cross Play',al:17,len:200,bpm:94,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2401},
+ {t:'Left For Dead',al:17,len:199,bpm:138,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:2403},
+ {t:'Only Time',al:17,len:150,bpm:72,root:55,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2411},
+ {t:'Slowly Dying (So Slow)',al:17,len:220,bpm:76,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2417},
+ {t:'Under Arrest',al:17,len:159,bpm:120,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2423},
+ {t:'Draw Your Next Move',al:17,len:245,bpm:92,root:51,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2437},
+ {t:'My Control',al:17,len:346,bpm:84,root:48,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2441},
+ {t:'Effect Me',al:17,len:209,bpm:78,root:52,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2447},
+ {t:'How Much Power Do You Have?',al:17,len:296,bpm:136,root:49,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2459},
+ {t:'Swish',al:17,len:141,bpm:126,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2467},
+ {t:'modern technology',al:17,len:220,bpm:74,root:54,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2473},
+ {t:'demand full pay',al:17,len:154,bpm:98,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2477},
+ {t:'Law By Law',al:17,len:192,bpm:80,root:47,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2503},
+ {t:'Cross Play pt. II',al:17,len:177,bpm:96,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,6,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2509},
+ {t:'Outro',al:17,len:32,bpm:66,root:52,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2521},
+ {t:'Welcome To Friday Forest: Intro',al:18,len:40,bpm:66,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2601},
+ {t:'Human Nature',al:18,len:204,bpm:76,root:52,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2603},
+ {t:'The Moon Shines',al:18,len:200,bpm:72,root:55,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2609},
+ {t:'Interlude #1',al:18,len:15,bpm:64,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2617},
+ {t:'Long Way Home',al:18,len:243,bpm:90,root:51,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2621},
+ {t:'Killing Season',feat:'D4Z',al:18,len:303,bpm:138,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:2633},
+ {t:'Interlude #2',al:18,len:19,bpm:64,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2647},
+ {t:'Friday (As We Live)',al:18,len:204,bpm:82,root:46,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2657},
+ {t:'Infinite',al:18,len:178,bpm:74,root:57,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2659},
+ {t:'Into The Night',feat:'B.I.A & Eco',al:18,len:275,bpm:116,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2663},
+ {t:'Interlude #3',al:18,len:45,bpm:66,root:52,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2671},
+ {t:'Slasher Biterz',al:18,len:150,bpm:142,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2677},
+ {t:'If The Shoe Fits',feat:'BornHome',al:18,len:239,bpm:94,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2683},
+ {t:'Crawl To The Grave',al:18,len:201,bpm:78,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2687},
+ {t:'Interlude #4',al:18,len:32,bpm:64,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2689},
+ {t:'Alone At Friday Forest “The Outro”',al:18,len:62,bpm:66,root:52,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2693},
+ {t:'Welcome To The Sequel: Intro',al:19,len:56,bpm:66,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2701},
+ {t:'The Fog Fades',al:19,len:204,bpm:72,root:52,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2707},
+ {t:'Killin’ Tales 4 Days',al:19,len:230,bpm:84,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2711},
+ {t:'Shall We Do It?',al:19,len:165,bpm:96,root:51,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2713},
+ {t:'(Grave Prelude)',al:19,len:17,bpm:64,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2719},
+ {t:'Brain Concussion',al:19,len:243,bpm:136,root:47,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:2729},
+ {t:'If I Did',al:19,len:245,bpm:78,root:55,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2731},
+ {t:'‘98 Bonnie & Clyde',al:19,len:205,bpm:92,root:50,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:2741},
+ {t:'(Villain Prelude)',al:19,len:15,bpm:64,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2749},
+ {t:'I’m A Villain',al:19,len:243,bpm:140,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:2753},
+ {t:'A Narrative Told Story: The Pause',al:19,len:180,bpm:70,root:54,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:2767},
+ {t:'(Shady Killings Prelude)',al:19,len:16,bpm:64,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2777},
+ {t:'Shady Killings',al:19,len:243,bpm:80,root:47,sc:'minor',pr:[0,6,5,4],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:2789},
+ {t:'You Got 2 Die',al:19,len:206,bpm:118,root:53,sc:'minor',pr:[0,2,5,6],pr2:[3,5,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:2791},
+ {t:'Alone At Friday Forest 2: Outro',al:19,len:18,bpm:64,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:2797},
+ {t:'Alone At Friday Forest III: The Intro',al:20,len:40,bpm:69,root:54,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3007},
+ {t:'War Tactics',feat:'Q-Tip & Raekwon',al:20,len:245,bpm:140,root:57,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3014},
+ {t:'Scared & Silent',feat:'Crank & Boddy',al:20,len:220,bpm:76,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3021},
+ {t:'Concept Of One',al:20,len:160,bpm:98,root:49,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3028},
+ {t:'Interlude: To Exist',al:20,len:23,bpm:69,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3035},
+ {t:'Addiction',al:20,len:234,bpm:73,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3042},
+ {t:'Ran At The Stop Sign',al:20,len:200,bpm:120,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:3049},
+ {t:'Awoken Hills',feat:'Mike Jason',al:20,len:209,bpm:71,root:52,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3056},
+ {t:'Interlude: To Be Deceased',al:20,len:20,bpm:66,root:49,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3063},
+ {t:'Woods',al:20,len:110,bpm:69,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3070},
+ {t:'Sighting A Witch',al:20,len:210,bpm:82,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3077},
+ {t:'Born To Be Alive',al:20,len:204,bpm:72,root:49,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3084},
+ {t:'Interlude: National Geographic',al:20,len:20,bpm:64,root:56,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3091},
+ {t:'Wish',al:20,len:153,bpm:94,root:55,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3098},
+ {t:'Outro: III',al:20,len:29,bpm:68,root:53,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3105},
+ {t:'Alone At Friday Forest pt. IV: The Intro',al:21,len:60,bpm:71,root:52,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3112},
+ {t:'Foreign Currency',feat:'KAN',al:21,len:220,bpm:131,root:51,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:3119},
+ {t:'Death Wish For A Body',al:21,len:245,bpm:77,root:48,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3126},
+ {t:'Springwood’s Most Wanted',al:21,len:200,bpm:93,root:48,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3133},
+ {t:'(Prelude: Dimes & Cents)',al:21,len:6,bpm:65,root:53,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3140},
+ {t:'Dimes & Cents',feat:'Mobb Deep',al:21,len:246,bpm:140,root:56,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:3147},
+ {t:'Strive For Excellence',al:21,len:236,bpm:71,root:49,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3154},
+ {t:'Desire To Be Great',al:21,len:200,bpm:116,root:50,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:3161},
+ {t:'G’z On Da Ez Mizzon',al:21,len:225,bpm:96,root:54,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3168},
+ {t:'(Prelude: Falling Apart)',al:21,len:15,bpm:67,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3175},
+ {t:'Falling Apart (Earth)',feat:'Nas',al:21,len:242,bpm:78,root:51,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3182},
+ {t:'(Prelude: Oh No)',al:21,len:10,bpm:65,root:53,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3189},
+ {t:'Rather Be Alive',al:21,len:200,bpm:75,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3196},
+ {t:'Oh No',feat:'Blockz, Marion & Bos',al:21,len:230,bpm:133,root:56,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3203},
+ {t:'Outro: IV',al:21,len:5,bpm:67,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3210},
+ {t:'Alone At Friday Forest V: The Intro',al:22,len:45,bpm:66,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3217},
+ {t:'Opportunity 2',al:22,len:150,bpm:115,root:54,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:3224},
+ {t:'Evil Wayz',al:22,len:245,bpm:88,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3231},
+ {t:'Juice In Da Box Freestyle',al:22,len:229,bpm:95,root:46,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3238},
+ {t:'Intermission Jason',al:22,len:35,bpm:65,root:46,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3245},
+ {t:'Crept Down (Took Sum)',al:22,len:209,bpm:133,root:52,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:3252},
+ {t:'Aftermath Aftermission',feat:'Nas, Cormega, Olu Dara & Pz',al:22,len:426,bpm:76,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3259},
+ {t:'What Power Means (2 Soul)',al:22,len:150,bpm:84,root:57,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3266},
+ {t:'Intermission Mary',al:22,len:22,bpm:69,root:53,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3273},
+ {t:'Nobody Take Nothing',al:22,len:213,bpm:94,root:54,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3280},
+ {t:'Children In A Cornfield',al:22,len:164,bpm:70,root:49,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3287},
+ {t:'They Can’t Take It',feat:'Pz',al:22,len:230,bpm:135,root:46,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:3294},
+ {t:'Outro: V',al:22,len:39,bpm:67,root:48,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3301},
+ {t:'Alone At Friday Forest VI: Intro',al:23,len:40,bpm:65,root:56,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3308},
+ {t:'Lost Souls',al:23,len:202,bpm:76,root:56,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3315},
+ {t:'Take ‘Em Down',feat:'Mobb Deep',al:23,len:245,bpm:142,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3322},
+ {t:'Write It In Blood',al:23,len:340,bpm:87,root:49,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3329},
+ {t:'Black Man Lost',feat:'Magic!',al:23,len:220,bpm:76,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3336},
+ {t:'Intermission #1',al:23,len:22,bpm:67,root:49,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3343},
+ {t:'Air Control',feat:'Petty & Inch Nails',al:23,len:270,bpm:124,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:3350},
+ {t:'Intermission #2',al:23,len:40,bpm:70,root:54,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3357},
+ {t:'Fame 2 My Name',al:23,len:195,bpm:97,root:49,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3364},
+ {t:'Burning In Hell: Electra Goes 2 Hell',al:23,len:322,bpm:84,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3371},
+ {t:'Intermission #3',al:23,len:12,bpm:69,root:56,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3378},
+ {t:'Ill Motherf*cker',feat:'Olu Dara',al:23,len:225,bpm:132,root:51,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3385},
+ {t:'Who Gon Stop Us?',feat:'Nas',al:23,len:202,bpm:95,root:56,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3392},
+ {t:'Intermission #4',al:23,len:10,bpm:71,root:51,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3399},
+ {t:'The Clock Hits Midnight',al:23,len:243,bpm:78,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3406},
+ {t:'Outro: VI',al:23,len:40,bpm:67,root:50,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3413},
+ {t:'Electra’s New Nightmare',disc:1,al:24,len:393,bpm:82,root:55,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3420},
+ {t:'Kids',al:24,len:295,bpm:77,root:47,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3427},
+ {t:'Down On 12th Street',disc:2,al:24,len:202,bpm:97,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3434},
+ {t:'What Hell Feels Like',al:24,len:290,bpm:136,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3441},
+ {t:'Sixth Sense',al:24,len:236,bpm:74,root:55,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3448},
+ {t:'The Clock Hits Midnight - Pt. 2',al:24,len:269,bpm:87,root:53,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3455},
+ {t:'Burning My Eyes',al:24,len:239,bpm:115,root:46,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:3462},
+ {t:'Soul Gets Turned Into Ash',al:24,len:214,bpm:79,root:49,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3469},
+ {t:'Eyes Gettin’ Red',al:24,len:130,bpm:135,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:3476},
+ {t:'My Life Flashed Before My Eyes',al:24,len:296,bpm:80,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3483},
+ {t:'Outro: VII',al:24,len:62,bpm:66,root:46,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3490},
+ {t:'Hunting Of The Witch',disc:1,al:25,len:410,bpm:86,root:57,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3497},
+ {t:'Sudden Death',al:25,len:310,bpm:131,root:49,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3504},
+ {t:'Alone At Friday Forest pt. 8: The Intro',disc:2,al:25,len:50,bpm:68,root:54,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3511},
+ {t:'All Mine',al:25,len:220,bpm:92,root:48,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3518},
+ {t:'Dr. Electra',feat:'Jay-Z & Bombz',al:25,len:230,bpm:136,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:3525},
+ {t:'Magic Made It',al:25,len:202,bpm:79,root:48,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3532},
+ {t:'Intermission',al:25,len:20,bpm:72,root:49,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3539},
+ {t:'Sleigh Down Hell',al:25,len:245,bpm:113,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:3546},
+ {t:'Role Model',al:25,len:263,bpm:82,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3553},
+ {t:'Foreshadowing The Past',al:25,len:204,bpm:82,root:52,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3560},
+ {t:'Dream’s Biz’s',al:25,len:78,bpm:90,root:48,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3567},
+ {t:'Intermission [128]',al:25,len:12,bpm:70,root:49,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3574},
+ {t:'Darkest Of Secrets',al:25,len:290,bpm:88,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3581},
+ {t:'Kids pt. II',al:25,len:373,bpm:79,root:48,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3588},
+ {t:'Burning Down Da Forest',al:25,len:316,bpm:135,root:57,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3595},
+ {t:'The End Of Legends',al:25,len:15,bpm:71,root:53,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3602},
+ {t:'Outro: VIII',al:25,len:40,bpm:66,root:48,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:3609},
+ {t:'Kill Me',disc:3,al:25,len:312,bpm:142,root:52,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:3616},
+ {t:'Remember These?',feat:'Eminem & RBX',al:25,len:299,bpm:89,root:50,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:3623},
+ {t:'OG Reaper',feat:'Dr. Dre',al:25,len:202,bpm:87,root:55,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:3630},
+ {t:'The Hunting Of The Witch',al:25,len:220,bpm:73,root:54,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:3637},
+ {t:'Prison',feat:'Jay-Z',disc:1,al:26,len:311,bpm:80,root:48,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4007},
+ {t:'Praise Our Way',feat:'Baby Keem & Travis Scott',al:26,len:220,bpm:136,root:57,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:4014},
+ {t:'Off The Wall',feat:'Playboi Carti & Lil Baby',al:26,len:345,bpm:141,root:50,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:4021},
+ {t:'Storm',feat:'The Weekend & Gunna',al:26,len:272,bpm:83,root:53,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4028},
+ {t:'Legacy',feat:'Kid Saint, Rock “A” Bye & Whoolis The Gangsta',al:26,len:243,bpm:90,root:52,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:4035},
+ {t:'Stars',feat:'Don Toliver & Kid Cudi',al:26,len:170,bpm:78,root:48,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4042},
+ {t:'God Breathed',feat:'Drake & Young Thug',al:26,len:228,bpm:83,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4049},
+ {t:'Why I Am',feat:'Young Thug, PARTYNEXTDOOR & M.I.A',al:26,len:191,bpm:133,root:46,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:4056},
+ {t:'Costa Luaga - Skit',feat:'Bia, Dera Mis, Marilyn Made & Julio',al:26,len:49,bpm:70,root:49,sc:'lydian',pr:[0,1,0,4],pr2:[5,1,4,0],ds:null,bass:'long',bv:0.42,arp:{grid:4,dens:0.6,type:'sine',bell:true,oct:1,len:7,vel:0.1},rev:0.65,pad:0.03,sev:true,swing:0,seed:4063},
+ {t:'Come Back To Life',al:26,len:244,bpm:79,root:49,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4070},
+ {t:'Say I Will',feat:'Kid Cudi & Mr. Hudson',al:26,len:245,bpm:74,root:57,sc:'major',pr:[0,5,3,4],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4077},
+ {t:'Rock Away',feat:'IDK, Common & Steward',al:26,len:200,bpm:91,root:57,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:4084},
+ {t:'Amazing',feat:'Jeezy & Chief Keef',al:26,len:192,bpm:132,root:56,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:4091},
+ {t:'Everything Has A Price',feat:'Big K.R.I.T, Mary J. Blige & Wish',al:26,len:225,bpm:78,root:55,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4098},
+ {t:'God Come Back',al:26,len:158,bpm:72,root:48,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4105},
+ {t:'Keep My Spirit Living',al:26,len:184,bpm:93,root:52,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:4112},
+ {t:'No Kids In The Wild',feat:'Frank Ocean',al:26,len:220,bpm:75,root:57,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4119},
+ {t:'Ok Alright',al:26,len:160,bpm:136,root:55,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.8,type:'sawtooth',bell:false,oct:1,len:1.6,vel:0.065},rev:0.28,pad:0.02,sev:false,swing:0,seed:4126},
+ {t:'Jehova',al:26,len:176,bpm:87,root:47,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4133},
+ {t:'Jenova',feat:'Dababy & Kid-See',al:26,len:204,bpm:137,root:56,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:4140},
+ {t:'25',al:26,len:255,bpm:112,root:53,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:4147},
+ {t:'Believe What I Told You',al:26,len:192,bpm:92,root:50,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:4154},
+ {t:'Heaven To Hell',feat:'Cameron Miles',al:26,len:314,bpm:82,root:56,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4161},
+ {t:'Father I Do',al:26,len:139,bpm:76,root:52,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4168},
+ {t:'Jesus Is Lord',al:26,len:398,bpm:96,root:51,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:4175},
+ {t:'New Day',feat:'Jay-Z & THE-DREAM',al:26,len:246,bpm:116,root:50,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'pulse',bass:'drive',bv:0.5,arp:{grid:2,dens:0.9,type:'triangle',bell:false,oct:1,len:1.8,vel:0.12},rev:0.28,pad:0.022,sev:false,swing:0,seed:4182},
+ {t:'Tell Me Now',feat:'Bryce Ross',al:26,len:142,bpm:138,root:55,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:4189},
+ {t:'Pure Life’s',al:26,len:154,bpm:79,root:56,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4196},
+ {t:'Pray For Me',feat:'Rick Ross, Future & DB',al:26,len:220,bpm:88,root:53,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4203},
+ {t:'Prison pt. II',feat:'Jay-Z',disc:2,al:26,len:290,bpm:88,root:52,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4210},
+ {t:'Ok Alright pt. II',feat:'Schoolboy Q & Habo',al:26,len:252,bpm:133,root:50,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:4217},
+ {t:'Janova pt. II',al:26,len:158,bpm:93,root:55,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:4224},
+ {t:'Jesus Is Lord pt. II',feat:'Jay Electronica',al:26,len:519,bpm:80,root:48,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4231},
+ {t:'The Spirit pt. III',disc:3,al:26,len:340,bpm:80,root:56,sc:'major',pr:[0,4,5,3],pr2:[3,4,5,0],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:4238},
+ {t:'Life Of A Lonely Soul',feat:'André 3000',al:26,len:312,bpm:82,root:49,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:4245},
+ {t:'The Spirit pt. I',disc:1,al:27,len:204,bpm:80,root:54,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:5011},
+ {t:'The Spirit pt. I [Black Mamba Remix]',feat:'Common, Talib Kweli, Donny D. & Kortzy',al:27,len:324,bpm:133,root:46,sc:'minor',pr:[0,5,3,6],pr2:[0,2,5,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:5022},
+ {t:'The Spirit pt. I [Instrumental]',al:27,len:204,bpm:80,root:54,sc:'dorian',pr:[0,3,6,3],pr2:[1,3,0,6],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:5011},
+ {t:'The Spirit pt. II',disc:2,al:27,len:220,bpm:87,root:55,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:5033},
+ {t:'The Spirit pt. II [Foolish Remix]',feat:'Paradise Fools',al:27,len:290,bpm:98,root:51,sc:'minor',pr:[0,0,5,6],pr2:[0,3,5,4],ds:'beat',bass:'boom',bv:0.55,arp:{grid:2,dens:0.7,type:'triangle',bell:false,oct:1,len:3,vel:0.12},rev:0.3,pad:0.022,sev:false,swing:0.12,seed:5044},
+ {t:'The Spirit pt. II (Instrumental)',al:27,len:220,bpm:87,root:55,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:5033},
+ {t:'The Spirit pt. III',disc:3,al:27,len:340,bpm:77,root:52,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:5055},
+ {t:'The Spirit pt. III (Instrumental)',al:27,len:340,bpm:77,root:52,sc:'phrygian',pr:[0,1,0,6],pr2:[0,1,5,6],ds:'beat',bass:'sub808',b808:true,bv:0.58,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.38,pad:0.024,sev:true,swing:0.1,seed:5055},
+ {t:'The Spirit pt. IV',disc:4,al:27,len:296,bpm:78,root:55,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:5066},
+ {t:'The Spirit pt. IV [Remix]',feat:'2Chainz & Ali Bonver',al:27,len:270,bpm:133,root:46,sc:'minor',pr:[0,5,2,6],pr2:[3,5,0,4],ds:'trap',bass:'sub808',b808:true,bv:0.62,arp:{grid:2,dens:0.75,type:'triangle',bell:false,oct:1,len:2,vel:0.1},rev:0.28,pad:0.02,sev:false,swing:0,seed:5077},
+ {t:'The Spirit pt. IV [Instrumental]',al:27,len:296,bpm:78,root:55,sc:'minor',pr:[0,6,5,6],pr2:[3,5,0,4],ds:'keys',bass:'half',bv:0.45,arp:{grid:2,dens:0.7,type:'sine',bell:true,oct:1,len:5,vel:0.1},rev:0.5,pad:0.026,sev:true,swing:0.1,seed:5066}
+];
+function rngOf(seed){var a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function mkArp(rng,a){
+  var pats=[];
+  for(var v=0;v<2;v++){
+    var idx=1,p=[];
+    for(var s=0;s<16;s++){
+      if(s%a.grid===0){
+        if(s!==0&&rng()>a.dens){p.push(-1);continue}
+        var step=[-2,-1,1,1,2][Math.floor(rng()*5)];
+        idx=Math.max(0,Math.min(4,idx+step));
+        p.push(idx);
+      } else if(a.grid>1&&rng()<a.dens*.18){
+        idx=Math.max(0,Math.min(4,idx+(rng()<.5?-1:1)));
+        p.push(idx);
+      } else p.push(-1);
+    }
+    pats.push(p);
+  }
+  return pats;
+}
+var TR=DEF.map(function(d,i){
+  var barDur,bars;
+  if(d.len){bars=Math.max(4,Math.round(d.len/(240/d.bpm)));barDur=d.len/bars}
+  else{bars=4*Math.round(90*d.bpm/960);barDur=240/d.bpm}
+  var stepDur=barDur/16;
+  var rng=rngOf(d.seed);
+  var o={i:i,stepDur:stepDur,barDur:barDur,bars:bars,dur:bars*barDur,scale:SC[d.sc],pats:[mkArp(rng,d.arp)][0]};
+  for(var k in d)o[k]=d[k];
+  return o;
+});
+function note(tr,d){var L=tr.scale.length,o=Math.floor(d/L),k=((d%L)+L)%L;return tr.root+tr.scale[k]+12*o}
+function yr(a){return a.year?a.year+' · ':''}
+function credit(t){return ALB[t.al].artist+(t.feat?(t.w?' with ':' feat. ')+t.feat:'')}
+function mtof(m){return 440*Math.pow(2,(m-69)/12)}
+
+/* ---------- cover art ---------- */
+var COV=[
+ function(){return '<polygon class="cf" points="14,86 86,14 86,86"/><polygon class="cb" points="32,86 59,59 59,86"/><rect class="sf" x="14" y="14" width="72" height="72" stroke-width="1"/>'},
+ function(){var s='<circle class="cf" cx="50" cy="50" r="34"/>';for(var y=52;y<86;y+=6)s+='<line class="sb" x1="10" x2="90" y1="'+y+'" y2="'+y+'" stroke-width="'+(1+(y-52)/9).toFixed(2)+'"/>';return s},
+ function(){var s='';for(var y=20;y<=84;y+=8)s+='<line class="sf" x1="12" x2="88" y1="'+y+'" y2="'+y+'" stroke-width=".7"/>';return s+'<line class="sf" x1="26" x2="26" y1="8" y2="92" stroke-width="1"/><rect class="cf" x="34" y="41" width="40" height="3.4"/><rect class="cf" x="34" y="57" width="24" height="3.4"/>'},
+ function(){var s='';for(var i=0;i<4;i++){var o=i*9;s+=i===3?'<rect class="cf" x="'+(18+o)+'" y="'+(18+o*.5)+'" width="42" height="42"/>':'<rect class="sf" x="'+(18+o)+'" y="'+(18+o*.5)+'" width="52" height="52" stroke-width="1.2"/>'}return s},
+ function(){var s='<line class="sf" stroke-width="3" x1="40" y1="0" x2="8" y2="100"/><line class="sf" stroke-width="3" x1="60" y1="0" x2="92" y2="100"/>';[8,18,31,48,70,96].forEach(function(y){s+='<line class="sf" stroke-width="'+(1.4+y/40).toFixed(2)+'" x1="'+(40-32*y/100).toFixed(2)+'" x2="'+(60+32*y/100).toFixed(2)+'" y1="'+y+'" y2="'+y+'"/>'});return s},
+ function(){return '<circle class="sf" cx="50" cy="50" r="28" stroke-width="9"/><line class="sb" x1="24" y1="76" x2="76" y2="24" stroke-width="10"/><line class="sf" x1="24" y1="76" x2="76" y2="24" stroke-width="3.2"/>'},
+ function(){var s='';for(var r=0;r<9;r++)for(var c=0;c<9;c++){var d=Math.hypot(c-4,r-4)/5.7;s+='<circle class="cf" cx="'+(14+c*9)+'" cy="'+(14+r*9)+'" r="'+((1-d)*4.2+.5).toFixed(2)+'"/>'}return s},
+ function(){var s='<circle class="sf" cx="50" cy="50" r="35" stroke-width="2.4"/>';for(var i=0;i<12;i++){var a=i*Math.PI/6,r1=i%3===0?27:30,r2=34;s+='<line class="sf" stroke-width="'+(i%3===0?2.4:1.2)+'" x1="'+(50+Math.sin(a)*r1).toFixed(2)+'" y1="'+(50-Math.cos(a)*r1).toFixed(2)+'" x2="'+(50+Math.sin(a)*r2).toFixed(2)+'" y2="'+(50-Math.cos(a)*r2).toFixed(2)+'"/>'}return s+'<line class="sf" stroke-width="2.6" x1="50" y1="50" x2="50" y2="26"/><line class="sf" stroke-width="2.6" x1="50" y1="50" x2="68" y2="58"/><circle class="cf" cx="50" cy="50" r="2.6"/>'}
+,
+ function(){return '<path class="sf" d="M33 38a17 17 0 1 1 24 15.5c-5 2.4-7 5.2-7 11" stroke-width="7"/><circle class="cf" cx="50" cy="80" r="4.8"/>'},
+ function(){return '<rect class="sf" x="26" y="14" width="48" height="72" stroke-width="2.4"/><polygon class="cf" points="26,14 56,22 56,78 26,86"/><circle class="sf" cx="65" cy="43" r="4.5" stroke-width="2"/><circle class="sf" cx="65" cy="57" r="4.5" stroke-width="2"/><line class="sf" x1="14" x2="86" y1="86" y2="86" stroke-width="1.2"/>'},
+ function(){var s='<path class="cf" d="M50 22 L56.3 41.4 L76.7 41.4 L60.2 53.4 L66.5 72.8 L50 60.8 L33.5 72.8 L39.8 53.4 L23.3 41.4 L43.7 41.4 Z"/>';for(var y=80;y<=92;y+=6)s+='<line class="sf" x1="14" x2="86" y1="'+y+'" y2="'+y+'" stroke-width="2.4"/>';for(var y=10;y<=16;y+=6)s+='<line class="sf" x1="14" x2="86" y1="'+y+'" y2="'+y+'" stroke-width="2.4"/>';return s},
+ function(){var s='<circle class="cf" cx="50" cy="26" r="9"/><line class="sf" x1="6" x2="94" y1="40" y2="40" stroke-width="1.2"/><line class="sf" x1="46" y1="40" x2="4" y2="100" stroke-width="2.4"/><line class="sf" x1="54" y1="40" x2="96" y2="100" stroke-width="2.4"/>';[[46,50,1.2],[56,62,1.8],[70,80,2.6],[90,104,3.6]].forEach(function(d){s+='<line class="sf" x1="50" x2="50" y1="'+d[0]+'" y2="'+d[1]+'" stroke-width="'+d[2]+'"/>'});return s}
+];
+function coverA(a){var al=ALB[a];if(al.art)return '<img src="'+al.art+'" alt="" draggable="false">';return '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100" height="100" class="cb"/>'+COV[al.cv]()+'</svg>'}
+function cover(i){return coverA(TR[i].al)}
+
+/* ---------- audio engine ---------- */
+var ctx=null,master,comp,analyser,reverb,noiseBuf,bus=null,dly=null,fbk=null,dOut=null,snd=null;
+var T={on:false,i:0,start:0,step:0,next:0};
+var AHEAD=.5;
+
+function makeImpulse(sec){
+  var len=Math.floor(ctx.sampleRate*sec),b=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(var c=0;c<2;c++){var d=b.getChannelData(c);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6)}
+  return b;
+}
+function initAudio(){
+  if(ctx)return;
+  var AC=window.AudioContext||window.webkitAudioContext;
+  ctx=new AC();
+  master=ctx.createGain();master.gain.value=state.vol;
+  comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.2;
+  analyser=ctx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=.82;
+  reverb=ctx.createConvolver();reverb.buffer=makeImpulse(2.4);
+  var wet=ctx.createGain();wet.gain.value=.3;
+  reverb.connect(wet);wet.connect(master);
+  master.connect(comp);comp.connect(analyser);analyser.connect(ctx.destination);
+  noiseBuf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*1.5),ctx.sampleRate);
+  var nd=noiseBuf.getChannelData(0);for(var i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+}
+function killBus(){
+  if(!bus||!ctx)return;
+  var nodes=[bus,dly,fbk,dOut,snd],b=bus;try{if(vin){vin.stop();vin=null}}catch(e){}
+  try{b.gain.cancelScheduledValues(ctx.currentTime);b.gain.setTargetAtTime(0,ctx.currentTime,.015)}catch(e){}
+  setTimeout(function(){nodes.forEach(function(n){try{n.disconnect()}catch(e){}})},160);
+  bus=null;T.on=false;
+}
+function startTrack(i,bar){
+  initAudio();killBus();
+  var tr=TR[i],now=ctx.currentTime;
+  bus=ctx.createGain();bus.gain.setValueAtTime(0,now);bus.gain.linearRampToValueAtTime(1,now+.04);
+  bus.connect(master);
+  snd=ctx.createGain();snd.gain.value=tr.rev;bus.connect(snd);snd.connect(reverb);
+  dly=ctx.createDelay(1.5);dly.delayTime.value=tr.stepDur*3;
+  fbk=ctx.createGain();fbk.gain.value=.34;dOut=ctx.createGain();dOut.gain.value=.38;
+  dly.connect(fbk);fbk.connect(dly);dly.connect(dOut);dOut.connect(bus);
+  var t0=now+.06;
+  T.start=t0-bar*tr.barDur;T.step=bar*16;T.next=t0;T.i=i;T.on=true;
+  var endT=T.start+tr.dur;
+  bus.gain.setValueAtTime(1,Math.max(t0+.05,endT-3));
+  bus.gain.linearRampToValueAtTime(0,endT-.05);
+  if(tr.v2&&tr.v2.vinyl){vin=ctx.createBufferSource();vin.buffer=noiseBuf;vin.loop=true;var vf=ctx.createBiquadFilter();vf.type='bandpass';vf.frequency.value=3200;vf.Q.value=.4;var vg=ctx.createGain();vg.gain.value=.012;vin.connect(vf);vf.connect(vg);vg.connect(bus);vin.start(t0);vin.stop(endT)}
+}
+function pump(){
+  if(!ctx||!T.on||!bus)return;
+  var tr=TR[T.i],total=tr.bars*16;
+  while(T.next<ctx.currentTime+AHEAD&&T.step<total){
+    playStep(tr,T.step,T.next);
+    T.next+=tr.stepDur;T.step++;
+  }
+}
+setInterval(pump,40);
+
+/* voices */
+function pad(tr,t,degs){
+  var dur=tr.barDur+.6;
+  var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.Q.value=.3;
+  lp.frequency.setValueAtTime(520,t);lp.frequency.linearRampToValueAtTime(1150,t+tr.barDur*.5);lp.frequency.linearRampToValueAtTime(620,t+dur);
+  var g=ctx.createGain();
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(tr.pad,t+.5);
+  g.gain.setValueAtTime(tr.pad,t+tr.barDur-.1);g.gain.linearRampToValueAtTime(0,t+dur);
+  lp.connect(g);g.connect(bus);
+  degs.forEach(function(d){
+    var f=mtof(note(tr,d));
+    [-7,7].forEach(function(c){
+      var o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=c;
+      o.connect(lp);o.start(t);o.stop(t+dur+.05);
+    });
+  });
+}
+function bassNote(t,m,dur,vel,b808){
+  var f=mtof(m);
+  var o=ctx.createOscillator();o.type='sine';o.frequency.value=f;
+  if(b808){o.frequency.setValueAtTime(f*2,t);o.frequency.exponentialRampToValueAtTime(f,t+.06)}
+  var o2=ctx.createOscillator();o2.type='triangle';o2.frequency.value=b808?f*2:f;
+  var m2=ctx.createGain();m2.gain.value=b808?.3:.35;
+  var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;
+  var g=ctx.createGain();
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vel,t+.012);
+  g.gain.exponentialRampToValueAtTime(vel*.55,t+dur*.7);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(lp);o2.connect(m2);m2.connect(lp);lp.connect(g);g.connect(bus);
+  o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);
+}
+function pluck(t,m,dur,vel,a){
+  var f=mtof(m);
+  var lp=ctx.createBiquadFilter();lp.type='lowpass';lp.Q.value=1;
+  lp.frequency.setValueAtTime(Math.min(f*6,5200),t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(f*1.2,320),t+dur);
+  var g=ctx.createGain();
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vel,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  var parts=a.bell?[[1,1],[2,.28],[4.01,.07]]:[[1,1]];
+  parts.forEach(function(p){
+    var o=ctx.createOscillator();o.type=a.type;o.frequency.value=f*p[0];
+    var pg=ctx.createGain();pg.gain.value=p[1];
+    o.connect(pg);pg.connect(lp);o.start(t);o.stop(t+dur+.05);
+  });
+  lp.connect(g);g.connect(bus);g.connect(dly);
+}
+function kick(t,v){
+  var o=ctx.createOscillator();o.type='sine';
+  o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.11);
+  var g=ctx.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.38);
+  o.connect(g);g.connect(bus);o.start(t);o.stop(t+.4);
+}
+function noiseHit(t,dur,type,freq,q,vel){
+  var s=ctx.createBufferSource();s.buffer=noiseBuf;
+  var f=ctx.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;
+  var g=ctx.createGain();g.gain.setValueAtTime(vel,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(bus);s.start(t,Math.random()*.6);s.stop(t+dur+.03);
+}
+function hat(t,v,open){noiseHit(t,open?.2:.045,'highpass',7500,.7,v)}
+function snare(t,v){
+  noiseHit(t,.16,'bandpass',1900,.8,v);
+  var o=ctx.createOscillator();o.type='triangle';
+  o.frequency.setValueAtTime(190,t);o.frequency.exponentialRampToValueAtTime(120,t+.07);
+  var g=ctx.createGain();g.gain.setValueAtTime(v*.6,t);g.gain.exponentialRampToValueAtTime(.0001,t+.09);
+  o.connect(g);g.connect(bus);o.start(t);o.stop(t+.1);
+}
+function clap(t,v){
+  noiseHit(t,.02,'bandpass',1500,.9,v);noiseHit(t+.011,.02,'bandpass',1500,.9,v);noiseHit(t+.022,.13,'bandpass',1400,.9,v);
+}
+
+/* ---------- v2 composer (sections, motifs, real drum/bass/keys) ---------- */
+var vin=null;
+function secMap(tr){
+  if(tr._sec)return tr._sec;
+  var N=tr.bars,sec=[],i;
+  if(N<10){for(i=0;i<N;i++)sec.push({n:'A',s:0,e:N});tr._sec=sec;return sec}
+  var intro=N>=48?8:(N>=24?4:2),outro=N>=48?4:2,mid=N-intro-outro,B=mid>=56?8:4,nb=Math.max(1,Math.round(mid/B));
+  for(i=0;i<intro;i++)sec.push({n:'I',s:0,e:intro});
+  for(var k=0;k<nb;k++){
+    var s=intro+Math.round(k*mid/nb),e=intro+Math.round((k+1)*mid/nb);
+    var nm=k===nb-1?'H':(nb>=5&&k===nb-3?'B':(k%2===0?'V':'H'));
+    for(var b=s;b<e;b++)sec.push({n:nm,s:s,e:e});
+  }
+  for(i=0;i<outro;i++)sec.push({n:'O',s:N-outro,e:N});
+  tr._sec=sec;return sec;
+}
+function motif(tr){
+  if(tr._mot)return tr._mot;
+  var r=rngOf(tr.seed*7+3),S=tr.v2.st,n=S==='trap'?5:(S==='keys'||S==='amb'?4:6),on=[],c=[0,2,4][Math.floor(r()*3)];
+  while(on.length<n&&c<28){on.push(c);c+=[2,3,3,4,6][Math.floor(r()*5)]}
+  var idx=3+Math.floor(r()*2),A=[];
+  on.forEach(function(s,j){
+    idx=Math.max(0,Math.min(8,idx+[-2,-1,-1,1,1,2][Math.floor(r()*6)]));
+    if(j===on.length-1)idx=[0,2,4,7][Math.floor(r()*4)];
+    var nx=j<on.length-1?on[j+1]:s+6;
+    A.push({s:s,d:idx,l:Math.min(8,nx-s)});
+  });
+  var B=A.map(function(x){return{s:x.s,d:x.d,l:x.l}}),m=B.length;
+  if(m>=2){B[m-2].d=Math.min(8,B[m-2].d+1+Math.floor(r()*2));B[m-1].d=[0,4][Math.floor(r()*2)]}
+  tr._mot={A:A,B:B};return tr._mot;
+}
+function barPat(tr,bar,sc){
+  var r=rngOf(tr.seed*131+bar*17),S=tr.v2.st,bb=bar-sc.s,H=sc.n==='H',P={k:[],s:[],h:[],o:[]},i;
+  if(S==='boom'){
+    P.k=[[0,1],[10,.9]];if(r()<.4)P.k.push([7,.55]);if(H&&r()<.4)P.k.push([2,.5]);if(bb%4===3&&r()<.6)P.k.push([14,.6]);
+    P.s=[[4,1],[12,1]];if(r()<.25)P.s.push([15,.28]);if(r()<.15)P.s.push([7.5,.25]);
+    for(i=0;i<16;i+=2)P.h.push([i,i%4===0?1:.55]);
+    if(H)for(i=1;i<16;i+=4)if(r()<.5)P.h.push([i+.5,.3]);
+    if(r()<.3)P.o.push([14,1]);
+  }else if(S==='trap'){
+    P.k=[[0,1],[r()<.5?10:7,.9]];if(H&&r()<.5)P.k.push([13,.8]);if(r()<.3)P.k.push([3,.7]);
+    P.s=[[8,1]];
+    for(i=0;i<16;i++){if(!H&&(i&1)&&r()<.3)continue;P.h.push([i,(i%4===0?1:(i%2?.5:.75))*(.8+r()*.3)])}
+    if(bb%4===3){P.h=P.h.filter(function(h){return h[0]<12});for(i=12;i<16;i+=.5)P.h.push([i,.5+(i-12)*.15])}
+    if(r()<.3)P.o.push([6,1]);
+  }else if(S==='club'){
+    [0,4,8,12].forEach(function(x){P.k.push([x,1])});P.s=[[4,1],[12,1]];
+    for(i=1;i<16;i+=2)P.h.push([i,.5]);[2,6,10,14].forEach(function(x){P.o.push([x,1])});
+  }else{
+    P.k=[[0,1],[r()<.5?9:7,.8]];if(r()<.3)P.k.push([14,.5]);
+    P.s=[[4,.8],[12,.8]];for(i=0;i<16;i+=2)P.h.push([i,i%4===0?.8:.5]);
+  }
+  P.bar=bar;return P;
+}
+function rhodes(t,m,dur,vel){
+  var f=mtof(m),g=ctx.createGain(),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=Math.min(f*5,4200);
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vel,t+.008);g.gain.exponentialRampToValueAtTime(vel*.35,t+.25);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  [[1,1],[2,.22],[3.01,.06],[7.02,.03]].forEach(function(p,j){
+    var o=ctx.createOscillator();o.type='sine';o.frequency.value=f*p[0];
+    var pg=ctx.createGain();pg.gain.setValueAtTime(p[1],t);if(j>1)pg.gain.exponentialRampToValueAtTime(.0001,t+.12);
+    o.connect(pg);pg.connect(lp);o.start(t);o.stop(t+dur+.05);
+  });
+  lp.connect(g);g.connect(bus);g.connect(dly);
+}
+function sawLead(t,m,dur,vel){
+  var f=mtof(m),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
+  lp.frequency.setValueAtTime(3200,t);lp.frequency.exponentialRampToValueAtTime(900,t+dur);
+  var g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vel,t+.02);g.gain.setValueAtTime(vel,t+Math.max(.03,dur-.08));g.gain.exponentialRampToValueAtTime(.0001,t+dur+.1);
+  var lfo=ctx.createOscillator();lfo.frequency.value=5.5;var lg=ctx.createGain();lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(f*.006,t+.25);lfo.connect(lg);lfo.start(t);lfo.stop(t+dur+.2);
+  [-9,9].forEach(function(c){var o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=c;lg.connect(o.frequency);o.connect(lp);o.start(t);o.stop(t+dur+.2)});
+  lp.connect(g);g.connect(bus);g.connect(dly);
+}
+function flute(t,m,dur,vel){
+  var f=mtof(m+12),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;
+  var g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vel,t+.06);g.gain.setValueAtTime(vel*.85,t+Math.max(.08,dur-.1));g.gain.exponentialRampToValueAtTime(.0001,t+dur+.15);
+  var lfo=ctx.createOscillator();lfo.frequency.value=5;var lg=ctx.createGain();lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(f*.008,t+.3);lfo.connect(lg);lfo.start(t);lfo.stop(t+dur+.2);
+  [['triangle',1],['sine',.2]].forEach(function(p,j){var o=ctx.createOscillator();o.type=p[0];o.frequency.value=f*(j?2:1);var pg=ctx.createGain();pg.gain.value=p[1];lg.connect(o.frequency);o.connect(pg);pg.connect(lp);o.start(t);o.stop(t+dur+.2)});
+  noiseHit(t,.12,'bandpass',f*2,1.2,vel*.18);
+  lp.connect(g);g.connect(bus);g.connect(dly);
+}
+function bellTone(t,m,dur,vel){
+  var f=mtof(m+12),g=ctx.createGain();
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vel,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  [[1,1],[2.76,.25],[5.4,.1]].forEach(function(p){var o=ctx.createOscillator();o.type='sine';o.frequency.value=f*p[0];var pg=ctx.createGain();pg.gain.value=p[1];o.connect(pg);pg.connect(g);o.start(t);o.stop(t+dur+.05)});
+  g.connect(bus);g.connect(dly);
+}
+function lead(tr,t,m,dur,vel){
+  var k=tr.v2.lead;
+  if(k==='rhodes')rhodes(t,m+12,Math.max(dur,.4),vel);
+  else if(k==='saw')sawLead(t,m+12,dur,vel*.7);
+  else if(k==='flute')flute(t,m,dur,vel*1.2);
+  else bellTone(t,m,Math.max(dur,.8),vel);
+}
+function riser(t,dur){
+  var s=ctx.createBufferSource();s.buffer=noiseBuf;s.loop=true;
+  var f=ctx.createBiquadFilter();f.type='bandpass';f.Q.value=2;f.frequency.setValueAtTime(400,t);f.frequency.exponentialRampToValueAtTime(7000,t+dur);
+  var g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.08,t+dur*.95);g.gain.linearRampToValueAtTime(0,t+dur);
+  s.connect(f);f.connect(g);g.connect(bus);s.start(t);s.stop(t+dur+.05);
+}
+function hits(list,st,fn){for(var i=0;i<list.length;i++){var x=list[i][0];if(Math.floor(x)===st)fn(x-st,list[i][1])}}
+var KV={boom:.8,trap:.9,club:.8,keys:.55},SV={boom:.4,trap:.4,club:.36,keys:.3};
+function playV2(tr,s,t0){
+  var bar=s>>4,st=s&15,sc=secMap(tr)[bar],sn=sc.n,bb=bar-sc.s,N=tr.bars,V=tr.v2,S=V.st,sd=tr.stepDur;
+  var pr=sn==='H'?tr.pr2:tr.pr,d=pr[bb%4];
+  var t=t0+((tr.swing&&(st&1))?tr.swing*sd:0);
+  var amb=sn==='A',intro=sn==='I',outro=sn==='O',brk=sn==='B',main=sn==='V'||sn==='H';
+  var fade=outro?Math.max(.2,(N-bar)/(sc.e-sc.s)):1;
+  var nxt=secMap(tr)[sc.e],lastBar=bar===sc.e-1;
+  var r=rngOf(tr.seed*977+s*13);
+  if(st===0){var degs=[d,d+2,d+4];if(tr.sev)degs.push(d+6);pad(tr,t0,degs)}
+  /* vinyl crackle */
+  if(V.vinyl&&r()<.1)noiseHit(t0,.008,'highpass',3000,.5,.03+r()*.04);
+  /* bass */
+  var P=null;
+  if(main){if(!tr._p||tr._p.bar!==bar)tr._p=barPat(tr,bar,sc);P=tr._p}
+  var bm=main||(intro&&bb>=2)||(outro&&bb===0);
+  if(amb){if(st===0&&(bar&1)===0)bassNote(t0,note(tr,d)-12,tr.barDur*2,.28,false)}
+  else if(bm){
+    var bvv=tr.bv*(intro?.7:1);
+    if(S==='club'){if(st%4===2)bassNote(t,note(tr,d)-12,sd*1.7,bvv*.8,false)}
+    else if(S==='keys'){if(st===0)bassNote(t,note(tr,d)-12,sd*7,bvv,false);if(st===8)bassNote(t,note(tr,d+(bar&1?4:0))-12,sd*6,bvv*.9,false)}
+    else{
+      var ks=(P?P.k:[[0,1],[10,1]]).map(function(k){return k[0]}).sort(function(a,b){return a-b});
+      for(var i=0;i<ks.length;i++)if(Math.floor(ks[i])===st){
+        var nx=i<ks.length-1?ks[i+1]:16,len=Math.min(8,nx-ks[i])*sd;
+        if(S==='trap')bassNote(t,note(tr,d)-24,len,bvv,true);
+        else bassNote(t,note(tr,d+((bb%4===3&&st>=10)?4:0))-12,len,bvv*.9,false);
+      }
+    }
+  }
+  /* chord comp */
+  if(!amb&&!outro&&(S!=='trap')&&!(intro&&bb<1)){
+    var cp=S==='club'?[0,3,6,10]:(S==='keys'?[0,8]:[[0,6,10],[0,3,8,11],[0,7,10],[2,6,11]][tr.seed%4]);
+    if(cp.indexOf(st)>-1){
+      var cv=(S==='club'?.06:.05)*(intro||brk?.7:1),cd=S==='keys'?sd*7:(S==='club'?sd*1.5:sd*3);
+      var ch=[d,d+2,d+4];if(tr.sev)ch.push(d+6);
+      ch.forEach(function(x,j){var m=note(tr,x)+(S==='club'?12:0);if(S==='club')sawLead(t,m,cd,cv*.7);else rhodes(t+j*.007,m,cd,cv)});
+    }
+  }
+  /* melody */
+  var mot=motif(tr),ph=(bb%2)*16+st,lv=V.lv||.1,mel=false,mv=1;
+  if(sn==='H'){mel=true;mv=1}
+  else if(sn==='V'&&bb%4<2){mel=true;mv=.55}
+  else if(brk){mel=true;mv=.8}
+  else if(intro&&bb>=sc.e-2){mel=true;mv=.6}
+  else if(amb||(outro&&bb===0)){mel=true;mv=.6}
+  if(mel){
+    var mm=(sn==='H'&&bb%8>=6)?mot.B:mot.A;
+    for(var j=0;j<mm.length;j++)if(mm[j].s===ph)lead(tr,t,note(tr,d+mm[j].d),mm[j].l*sd*1.05,lv*mv*fade*(ph===0?1.1:1));
+  }
+  /* drums */
+  if(P){
+    var dv=sn==='H'?1:.85;
+    hits(P.k,st,function(o,v){kick(t0+o*sd,KV[S]*v*dv);noiseHit(t0+o*sd,.012,'highpass',2500,.5,.08*v)});
+    hits(P.s,st,function(o,v){if(S==='trap'||S==='club')clap(t0+o*sd,SV[S]*v*dv);else snare(t0+o*sd,SV[S]*v*dv)});
+    hits(P.h,st,function(o,v){hat(t+o*sd+(r()-.5)*.012,.085*v*dv*(.85+r()*.3),false)});
+    hits(P.o,st,function(o,v){hat(t+o*sd,.07*dv,true)});
+  }
+  /* fills, crash, riser, scratch of vinyl */
+  if(lastBar&&st>=12&&(main||intro)){snare(t0,.1+.05*(st-12));if(st>=14)snare(t0+sd*.5,.1+.05*(st-12))}
+  if(lastBar&&st===0&&nxt&&(nxt.n==='H'||nxt.n==='B'||nxt.n==='V')&&(sn!=='O'))riser(t0,tr.barDur);
+  if(sn==='H'&&bb===0&&st===0)noiseHit(t0,1.1,'highpass',4500,.5,.1);
+}
+
+function playStep(tr,s,t0){
+  if(tr.v2){playV2(tr,s,t0);return}
+  var bar=s>>4,st=s&15,N=tr.bars,half=N>>1;
+  var outro=bar>=N-4,lng=N>=44;
+  var brk=lng?(bar>=12&&(bar&15)>=12&&(bar&15)<14&&!outro):(bar>=half-2&&bar<half);
+  var pr=(lng?((bar>>4)&1):(bar>=half))?tr.pr2:tr.pr,d=pr[bar%4];
+  var t=t0+((tr.swing&&(st&1))?tr.swing*tr.stepDur:0);
+  var fade=outro?Math.max(.15,(N-bar)/4):1;
+  if(st===0){
+    var degs=[d,d+2,d+4];if(tr.sev)degs.push(d+6);
+    pad(tr,t0,degs);
+  }
+  if(tr.bass&&bar>=4&&!outro&&!brk){
+    var pat=BASS[tr.bass];
+    for(var i=0;i<pat.length;i++){
+      if(pat[i][0]===st)bassNote(t,note(tr,d+pat[i][2])-(tr.b808?24:12),tr.stepDur*pat[i][1],tr.bv,tr.b808);
+    }
+  }
+  if(bar>=2){
+    var v=tr.pats[(bar>>2)&1][st];
+    if(v>=0){
+      var pool=[d,d+2,d+4,d+7,d+9];
+      pluck(t,note(tr,pool[v])+12*tr.arp.oct,tr.stepDur*tr.arp.len,tr.arp.vel*(st%4===0?1.25:.9)*fade,tr.arp);
+    }
+  }
+  if(tr.ds&&bar>=8&&!outro&&!brk){
+    var k=DR[tr.ds];
+    if(k.k.indexOf(st)>-1)kick(t,k.kv);
+    if(k.s.indexOf(st)>-1){if(k.clap)clap(t,k.sv);else snare(t,k.sv)}
+    if(k.h.indexOf(st)>-1)hat(t,k.hv*(st%4===2?1:.7),tr.ds==='pulse'&&st===14);
+    if(k.roll&&(st===13||st===15)&&(bar&1))hat(t,k.hv*.55,false);
+    if(k.roll&&st===14&&bar%4===3)hat(t,k.hv*.8,true);
+    if(bar%8===7&&st>=12&&(tr.ds==='pulse'||tr.ds==='beat'))snare(t,.15+.08*(st-12));
+  }
+}
+
+/* ---------- state ---------- */
+var state={i:0,playing:false,started:false,pendingBar:0,shuffle:false,repeat:'off',filter:'all',vol:.85,liked:{},alb:-1,q:[]};
+try{
+  var L=JSON.parse(localStorage.getItem('mono.liked2')||'[]');L.forEach(function(x){state.liked[x]=true});
+  var v0=parseFloat(localStorage.getItem('mono.vol'));if(v0>=0&&v0<=1)state.vol=v0;
+}catch(e){}
+function save(){try{localStorage.setItem('mono.liked2',JSON.stringify(Object.keys(state.liked).map(Number)));localStorage.setItem('mono.vol',String(state.vol))}catch(e){}}
+function fmt(s){s=Math.max(0,Math.round(s));var r=s%60;return Math.floor(s/60)+':'+(r<10?'0':'')+r}
+function visible(){return TR.filter(function(t){return state.filter==='all'||state.liked[t.i]})}
+function pos(){var t=TR[state.i];if(state.started&&ctx)return Math.min(t.dur,Math.max(0,ctx.currentTime-T.start));return state.pendingBar*t.barDur}
+
+/* ---------- ui ---------- */
+var HEART='<svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+function rowHTML(t,n){
+  return '<li class="row" data-i="'+t.i+'"><button class="row-main" data-act="row" data-i="'+t.i+'" aria-label="Play '+t.t+'">'
+   +'<span class="idx"><span class="n">'+n+'</span><span class="eq"><i></i><i></i><i></i></span></span>'
+   +'<span class="thumb">'+cover(t.i)+'</span>'
+   +'<span class="t"><b>'+t.t+'</b><small>'+credit(t)+'</small></span>'
+   +'<span class="dur">'+fmt(t.dur)+'</span></button>'
+   +'<button class="icon-btn like" data-act="likeRow" data-i="'+t.i+'" aria-label="Like '+t.t+'" aria-pressed="'+(!!state.liked[t.i])+'">'+HEART+'</button></li>';
+}
+var ACTIONS='<div class="actions"><button class="btn solid" data-act="playall"><svg viewBox="0 0 24 24"><path d="M8 5.5v13a.5.5 0 0 0 .77.42l10-6.5a.5.5 0 0 0 0-.84l-10-6.5A.5.5 0 0 0 8 5.5z" fill="currentColor"/></svg>Play</button><button class="btn" data-act="shuffleall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5c2 0 3.2.8 4.4 2.5l2.2 3c1.2 1.7 2.4 2.5 4.4 2.5H21M3 17h3.5c2 0 3.2-.8 4.4-2.5M13.5 8.5C14.7 7.8 15.6 7 17.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>Shuffle</button></div>';
+function totalMin(list){var m=Math.round(list.reduce(function(a,t){return a+t.dur},0)/60),h=Math.floor(m/60);return h?h+'h'+(m%60?' '+(m%60)+' min':''):m+' min'}
+function albumTracks(a){return TR.filter(function(t){return t.al===a})}
+function curList(){
+  var l=state.alb>=0?albumTracks(state.alb):state.filter==='liked'?visible():TR;
+  return l.map(function(t){return t.i});
+}
+function heroHTML(){
+  if(state.alb>=0){
+    var a=ALB[state.alb],items=albumTracks(state.alb);
+    return '<div class="ahead"><div class="acover">'+coverA(state.alb)+'</div><div class="ainfo"><div class="eyebrow">'+a.type+'</div><h1 class="h1s">'+a.n+'</h1><div class="meta-line">'+a.artist+' · '+yr(a)+items.length+' tracks · '+totalMin(items)+'</div>'+ACTIONS+'</div></div>';
+  }
+  if(state.filter==='liked'){
+    var v=visible();
+    return '<div class="eyebrow">Your music</div><h1>Liked</h1><div class="meta-line">'+v.length+(v.length===1?' track':' tracks')+'</div>'+(v.length?ACTIONS:'');
+  }
+  return '<div class="eyebrow">Your music</div><h1>Library</h1><div class="meta-line">'+TR.length+' tracks · '+totalMin(TR)+' · '+ALB.length+' releases</div>'+ACTIONS;
+}
+function render(){
+  var home=state.alb<0,liked=state.filter==='liked',root=$('#rel');
+  $('#chips').hidden=!home;$('#back').hidden=home;
+  $('#hero').innerHTML=heroHTML();
+  if(home&&!liked){
+    var groups=[],gm={};
+    ALB.forEach(function(a,i){var k=a.by||a.artist;if(!gm[k]){gm[k]={name:k,items:[]};groups.push(gm[k])}gm[k].items.push(i)});
+    groups.forEach(function(g){g.items.sort(function(x,y){return (ALB[x].year||9999)-(ALB[y].year||9999)})});
+    root.innerHTML=groups.map(function(g){
+      return '<section class="agroup"><div class="rel-h"><h2>'+g.name+'</h2><span>'+g.items.length+(g.items.length===1?' release':' releases')+'</span></div><div class="albums">'+g.items.map(function(i){
+        var a=ALB[i];
+        return '<button class="album" data-act="album" data-a="'+i+'" aria-label="Open '+a.n+'"><span class="acover">'+coverA(i)+'</span><b>'+a.n+'</b><small>'+(a.artist!==g.name?(a.sub||a.artist)+' · ':'')+yr(a)+a.type+'</small></button>';
+      }).join('')+'</div></section>';
+    }).join('');
+  } else if(home){
+    var v=visible();
+    root.innerHTML=v.length?'<ul class="tracks flat">'+v.map(function(t,k){return rowHTML(t,k+1)}).join('')+'</ul>'
+      :'<div class="empty"><svg class="like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Nothing liked yet. Tap the heart on a track to keep it here.</div>';
+  } else {
+    root.innerHTML='<ul class="tracks flat">'+albumTracks(state.alb).map(function(t,k){return (t.disc?'<li class="disc">Disc '+t.disc+'</li>':'')+rowHTML(t,k+1)}).join('')+'</ul>';
+  }
+  mark();
+}
+function mark(){$$('.row').forEach(function(r){r.classList.toggle('cur',+r.getAttribute('data-i')===state.i)})}
+function likedCount(){$('#likedN').textContent=Object.keys(state.liked).length}
+function paint(){
+  var t=TR[state.i];
+  $$('.js-title').forEach(function(e){e.textContent=t.t});
+  $$('.js-sub').forEach(function(e){e.textContent=credit(t)});
+  $$('.js-alb').forEach(function(e){e.textContent=ALB[t.al].n+(ALB[t.al].year?' · '+ALB[t.al].year:'')});
+  $$('.js-cover').forEach(function(e){e.innerHTML=cover(t.i)});
+  $('#tdur').textContent=fmt(t.dur);$('#seek').max=t.dur;
+  var l=!!state.liked[t.i];$$('.js-like').forEach(function(e){e.setAttribute('aria-pressed',l)});
+  mark();tick();idle=true;
+}
+function setPlaying(v){
+  state.playing=v;document.body.classList.toggle('is-playing',v);
+  $$('[data-act=play]').forEach(function(b){b.setAttribute('aria-label',v?'Pause':'Play')});
+  if(!v)idle=true;
+}
+function syncToggles(){
+  $$('[data-act=shuffle]').forEach(function(b){b.setAttribute('aria-pressed',state.shuffle)});
+  $$('[data-act=repeat]').forEach(function(b){
+    b.setAttribute('aria-pressed',state.repeat!=='off');
+    b.classList.toggle('one',state.repeat==='one');
+    b.setAttribute('aria-label','Repeat '+state.repeat);
+  });
+}
+
+/* ---------- transport ---------- */
+function select(i,auto,list){
+  if(list)state.q=list;
+  state.i=i;state.pendingBar=0;
+  if(auto){initAudio();startTrack(i,0);state.started=true;setPlaying(true);ctx.resume()}
+  else{
+    if(ctx){killBus();if(ctx.state==='running')ctx.suspend()}
+    state.started=false;setPlaying(false);
+  }
+  paint();
+}
+function toggle(){
+  if(state.playing){if(ctx)ctx.suspend();setPlaying(false);return}
+  initAudio();
+  if(!state.started){startTrack(state.i,state.pendingBar);state.started=true}
+  ctx.resume();setPlaying(true);
+}
+function queue(){return state.q&&state.q.indexOf(state.i)>-1?state.q:TR.map(function(t){return t.i})}
+function next(auto){
+  var list=queue(),k=list.indexOf(state.i),n;
+  if(state.shuffle&&list.length>1){do{n=list[Math.floor(Math.random()*list.length)]}while(n===state.i)}
+  else{
+    n=k===-1?list[0]:list[(k+1)%list.length];
+    if(auto&&state.repeat==='off'&&k===list.length-1){select(n,false);return}
+  }
+  select(n,true);
+}
+function prev(){
+  if(pos()>3){seekTo(0);return}
+  var list=queue(),k=list.indexOf(state.i);
+  select(k===-1?list[0]:list[(k-1+list.length)%list.length],true);
+}
+function seekTo(sec){
+  var t=TR[state.i],bar=Math.max(0,Math.min(t.bars-1,Math.round(sec/t.barDur)));
+  if(state.started)startTrack(state.i,bar);else state.pendingBar=bar;
+  tick();
+}
+function ended(){if(state.repeat==='one')select(state.i,true);else next(true)}
+function toggleLike(i){
+  if(state.liked[i])delete state.liked[i];else state.liked[i]=true;
+  save();likedCount();
+  if(state.alb<0&&state.filter==='liked')render();
+  else $$('.row .like').forEach(function(b){if(+b.getAttribute('data-i')===i)b.setAttribute('aria-pressed',!!state.liked[i])});
+  var l=!!state.liked[state.i];$$('.js-like').forEach(function(e){e.setAttribute('aria-pressed',l)});
+}
+
+/* ---------- events ---------- */
+var seek=$('#seek'),dragging=false,np=$('#np');
+seek.addEventListener('input',function(){
+  dragging=true;var t=TR[state.i],p=+seek.value;
+  seek.style.setProperty('--p',(p/t.dur*100)+'%');$('#tcur').textContent=fmt(p);
+});
+seek.addEventListener('change',function(){dragging=false;seekTo(+seek.value)});
+var volEl=$('#vol');volEl.value=state.vol;volEl.style.setProperty('--p',(state.vol*100)+'%');
+volEl.addEventListener('input',function(){
+  state.vol=+volEl.value;volEl.style.setProperty('--p',(state.vol*100)+'%');
+  if(master)master.gain.setTargetAtTime(state.vol,ctx.currentTime,.02);save();
+});
+document.addEventListener('click',function(e){
+  var chip=e.target.closest('[data-filter]');
+  if(chip){
+    state.filter=chip.getAttribute('data-filter');
+    $$('[data-filter]').forEach(function(c){c.setAttribute('aria-pressed',c===chip)});
+    state.alb=-1;render();window.scrollTo(0,0);return;
+  }
+  var b=e.target.closest('[data-act]');if(!b)return;
+  var a=b.getAttribute('data-act');
+  if(a==='row'){var i=+b.getAttribute('data-i');if(i===state.i)toggle();else select(i,true,curList())}
+  else if(a==='play')toggle();
+  else if(a==='next')next(false);
+  else if(a==='prev')prev();
+  else if(a==='shuffle'){state.shuffle=!state.shuffle;syncToggles()}
+  else if(a==='repeat'){state.repeat=state.repeat==='off'?'all':state.repeat==='all'?'one':'off';syncToggles()}
+  else if(a==='like')toggleLike(state.i);
+  else if(a==='likeRow')toggleLike(+b.getAttribute('data-i'));
+  else if(a==='open'){np.classList.add('open');fit()}
+  else if(a==='close')np.classList.remove('open');
+  else if(a==='playall'){state.shuffle=false;syncToggles();var l0=curList();select(l0[0],true,l0)}
+  else if(a==='shuffleall'){state.shuffle=true;syncToggles();var l1=curList();select(l1[Math.floor(Math.random()*l1.length)],true,l1)}
+  else if(a==='album'){state.alb=+b.getAttribute('data-a');render();window.scrollTo(0,0)}
+  else if(a==='back'){state.alb=-1;render();window.scrollTo(0,0)}
+  else if(a==='gotoAlbum'){state.alb=TR[state.i].al;state.filter='all';$$('[data-filter]').forEach(function(c){c.setAttribute('aria-pressed',c.getAttribute('data-filter')==='all')});np.classList.remove('open');render();window.scrollTo(0,0)}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){np.classList.remove('open');return}
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='button')return;
+  if(e.key===' '){e.preventDefault();toggle()}
+  else if(e.key==='ArrowRight')next(false);
+  else if(e.key==='ArrowLeft')prev();
+});
+
+/* ---------- visualizer + clock ---------- */
+var cv=$('#viz'),g2=cv.getContext('2d'),fdata=null,idle=true,dpr=1;
+function fit(){
+  var r=cv.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));idle=true;
+}
+window.addEventListener('resize',fit);
+function draw(){
+  if(!state.playing&&!idle)return;
+  var W=cv.width,H=cv.height,n=44;
+  g2.clearRect(0,0,W,H);
+  g2.strokeStyle=(getComputedStyle(document.documentElement).getPropertyValue('--fg')||'#000').trim();
+  g2.lineWidth=2.4*dpr;g2.lineCap='round';
+  if(state.playing&&analyser){if(!fdata)fdata=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(fdata)}
+  for(var i=0;i<n;i++){
+    var v=0;
+    if(state.playing&&fdata){var b=Math.floor(Math.pow(i/n,1.55)*88)+1;v=Math.min(1,fdata[b]/255*1.25)}
+    var h=Math.max(3*dpr,v*H),x=(i+.5)*(W/n),y1=(H-h)/2+1.2*dpr,y2=(H+h)/2-1.2*dpr;
+    g2.globalAlpha=state.playing?1:.35;
+    g2.beginPath();g2.moveTo(x,y1);g2.lineTo(x,y2);g2.stroke();
+  }
+  g2.globalAlpha=1;
+  if(!state.playing)idle=false;
+}
+function tick(){
+  var t=TR[state.i],p=pos();
+  if(!dragging){
+    seek.value=p;seek.style.setProperty('--p',(p/t.dur*100)+'%');$('#tcur').textContent=fmt(p);
+  }
+  $('#mprog').style.width=(p/t.dur*100)+'%';
+  if(T.on&&ctx&&ctx.currentTime>=T.start+t.dur){T.on=false;ended()}
+}
+function loop(){tick();draw();requestAnimationFrame(loop)}
+
+/* ---------- boot ---------- */
+render();likedCount();syncToggles();paint();fit();loop();
+})();
+</script>
+</body></html>
